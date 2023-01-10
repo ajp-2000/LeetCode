@@ -248,6 +248,75 @@ int maxDepth(TreeNode* root) {
     return 1 + std::max(a, b);
 }
 
+// Return the minimum depth of a tree
+int minDepth(TreeNode* root) {
+    if (!root) return 0;
+    return 1 + std::min(minDepth(root->left), minDepth(root->right));
+}
+
+// Check whether two trees are the same
+bool isSameTree(TreeNode* p, TreeNode* q) {
+    // Deal with the possibility of nulls
+    if ((p==nullptr) || (q==nullptr)){
+        if ((p==nullptr) && (q==nullptr))
+            return true;
+        return false;
+    }
+
+    // Compare values
+    if (p->val != q->val)
+        return false;
+        
+    // Compare subtrees
+    if (!isSameTree(p->left, q->left) || !isSameTree(p->right, q->right))
+        return false;
+        
+    return true;
+    }
+
+// Recursively check if two trees are mirror images of each other
+bool areMirrors(TreeNode* p, TreeNode* q){
+    // Deal with potential nulls
+    if ((p==nullptr) || (q==nullptr)){
+        if ((p==nullptr) && (q==nullptr))
+            return true;
+        return false;
+    }
+
+    // Check the present case
+    if (p->val != q->val)
+        return false;
+        
+    // Recurse
+    if (!areMirrors(p->left, q->right) || !areMirrors(p->right, q->left))
+        return false;
+        
+    return true;
+}
+
+// Check whether a tree is symmetrical
+bool isSymmetric(TreeNode* root) {
+    // Deal with possible nulls
+    if (root == nullptr)
+        return true;
+        
+    return areMirrors(root->left, root->right);
+}
+
+// Check whether a tree is balanced
+bool isBalanced(TreeNode* root) {
+    if (!root)
+        return true;
+        
+    if ((!isBalanced(root->left)) || (!isBalanced(root->right)))
+        return false;
+        
+    if (abs(maxDepth(root->left) - maxDepth(root->right)) <= 1)
+        return true;
+        
+    return false;
+}
+
 /* Get a tree from the user*/
 TreeNode *getTree(){
     // Take input for a tree then print it
@@ -317,20 +386,75 @@ TreeNode *getTree(){
     // Wrap up
     TreeNode *root = new TreeNode();
     root = listToRoot(treeArray, sizeof(treeArray)/sizeof(treeArray[0]));
-    std::cout << "\nTree formed:\n\n";
+    std::cout << "Tree formed:\n\n";
     printTree(root);
 
     return root;
 }
 
 /* Now handle the above */
+
+// Get a number from 1 to 10 from the user, returning it zero-indexed
+int getTreeNum(std::string prompt = "Which # tree? (1 - 10) "){
+    int num;
+    do{
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cout << prompt;
+        std::cin >> num;
+    } while (std::cin.fail() || num<1 || num>9);
+
+    return num - 1;
+}
+
 int main(int argc, char *argv[]){
     std::cout << "trees.cpp!\n\n";
     
-    // Trial run
-    TreeNode *root = getTree();
-    std::cout << "Maximum depth: " << maxDepth(root) << "\n";
-    deleteTree(root);
+    // Let the user do things with ten trees, NULL by default
+    TreeNode *roots[10];
+    for (int t=0; t<10; t++) roots[t] = nullptr;
+
+    std::string input;
+    do {
+        std::cout << "> ";
+        std::cin >> input;
+
+        if (input == "set"){
+            int t = getTreeNum();
+
+            // Report the current tree
+            if (!roots[t]){
+                std::cout << "Tree #" << t+1 << " is currently empty.\n";
+            } else{
+                std::cout << "Tree #" << t+1 << " is currently:\n\n";
+                printTree(roots[t]);
+            }
+
+            // Enter a new tree
+            std::cout << "Setting tree #" << t+1 << ":\n\n";
+            roots[t] = getTree();
+        } else if (input == "print"){
+            printTree(roots[getTreeNum()]);
+        } else if (input == "maxdepth"){
+            int t = getTreeNum();
+            std::cout << "Maximum depth: " << maxDepth(roots[t]) << "\n";
+        } else if (input == "mindepth"){
+            int t = getTreeNum();
+            std::cout << "Minimum depth: " << minDepth(roots[t]) << "\n";
+        } else if (input == "same"){
+            int t1 = getTreeNum();
+            int t2 = getTreeNum("Which other # tree? (1 - 10) ");
+            std::cout << (isSameTree(roots[t1], roots[t2]) ? "Same tree.\n" : "Different trees.\n");
+        } else if (input == "symmetrical"){
+            std::cout << (isSymmetric(roots[getTreeNum()]) ? "Symmetrical.\n" : "Asymmetrical.\n"); 
+        } else if (input == "balanced"){
+            std::cout << (isBalanced(roots[getTreeNum()]) ? "Balanced.\n" : "Unbalanced.\n"); 
+        }
+    } while (input != "exit");
+
+    // Wrap up
+    std::cout << "\nExiting.\n";
+    for (int t=0; t<10; t++) if (roots[t]) deleteTree(roots[t]);
 
     return 0;
 }
