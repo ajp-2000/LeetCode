@@ -32,8 +32,8 @@ bool printTree(TreeNode *root);
 // List values of INT_MIN stand in for gaps in the tree structure, i.e. [1, INT_MIN, 2] represents a tree with 
 // head 1, and right leaf 2 but no left leaf; values of INT_MAX stand for empty space at the end of a row
 TreeNode *listToRoot(int vals[], int len){ 
-    if (len == 0) return NULL;
-    if (len == 1) return new TreeNode(vals[0]);
+    if (len == 0) return nullptr;
+    if (len == 1) return new TreeNode(vals[0], nullptr, nullptr);
 
     // First convert the list to a 2D vector so we know where we stand
     int depth = 0;
@@ -78,6 +78,7 @@ TreeNode *listToRoot(int vals[], int len){
 
             if (depth < maxDepth){
                 if (tree[depth+1][i*2] != INT_MIN && tree[depth+1][i*2] != INT_MAX){
+                    std::cout << tree[depth+1][i*2] << "\n";
                     // Work out how many nodes along this corresponds to
                     int k = 0;
                     for (int j=0; j<i*2; j++){
@@ -87,7 +88,8 @@ TreeNode *listToRoot(int vals[], int len){
 
                     leftptr = nodes[0][k];
                 }
-                if (tree[depth+1][i*2 + 1] != INT_MIN && tree[depth+1][i*2] != INT_MAX){
+                if (tree[depth+1][i*2 + 1] != INT_MIN && tree[depth+1][i*2 + 1] != INT_MAX){
+                    std::cout << tree[depth+1][i*2 + 1] << "\n";
                     int k = 0;
                     for (int j=0; j<i*2 + 1; j++){
                         if (tree[depth+1][j] != INT_MIN && tree[depth+1][j] != INT_MAX)
@@ -108,8 +110,10 @@ TreeNode *listToRoot(int vals[], int len){
     TreeNode *leftptr = nullptr;
     TreeNode *rightptr = nullptr;
 
-    if (nodes[0][0]) leftptr = nodes[0][0];
-    if (nodes[0].size()>1 && nodes[0][1]) rightptr = nodes[0][1];
+    if (tree[1][0] != INT_MIN && tree[1][0] != INT_MAX) leftptr = nodes[0][0];
+    if (tree[1][1] != INT_MIN && tree[1][1] != INT_MAX){
+        rightptr = nodes[0][(tree[1][0] != INT_MIN && tree[1][0] != INT_MAX) ? 1 : 0];
+    }
     TreeNode *root = new TreeNode(vals[0], leftptr, rightptr);
     
     return root;
@@ -244,10 +248,8 @@ int maxDepth(TreeNode* root) {
     return 1 + std::max(a, b);
 }
 
-/* Now give the user an interface to use the above */
-int main(int argc, char *argv[]){
-    std::cout << "trees.cpp!\n\n";
-    
+/* Get a tree from the user*/
+TreeNode *getTree(){
     // Take input for a tree then print it
     int depth = 0;
     int i = 0;                                                      // An overall count for position in vals
@@ -312,10 +314,21 @@ int main(int argc, char *argv[]){
         i += j;
     }
 
-    // Test the tree
-    TreeNode *root = listToRoot(treeArray, sizeof(treeArray)/sizeof(treeArray[0]));
+    // Wrap up
+    TreeNode *root = new TreeNode();
+    root = listToRoot(treeArray, sizeof(treeArray)/sizeof(treeArray[0]));
     std::cout << "\nTree formed:\n\n";
     printTree(root);
+
+    return root;
+}
+
+/* Now handle the above */
+int main(int argc, char *argv[]){
+    std::cout << "trees.cpp!\n\n";
+    
+    // Trial run
+    TreeNode *root = getTree();
     std::cout << "Maximum depth: " << maxDepth(root) << "\n";
     deleteTree(root);
 
