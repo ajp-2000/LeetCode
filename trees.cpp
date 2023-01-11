@@ -1,4 +1,4 @@
-/* trees.cpp – A number of functions to do things with trees, built based on several LeetCode challenges.*/
+/* trees.cpp – A number of functions to do things with trees, built based on several LeetCode challenges. */
 
 #include <iostream>
 #include <cmath>
@@ -317,6 +317,15 @@ bool isBalanced(TreeNode* root) {
     return false;
 }
 
+// Check whether a tree has a path summing to a given value
+bool hasPathSum(TreeNode* root, int targetSum) {
+    // Try each possible route to a leaf
+    if (!root) return false;
+    if (root->val == targetSum) return true;
+
+    return (hasPathSum(root->left, targetSum-root->val)) || (hasPathSum(root->right, targetSum-root->val));
+}
+
 /* Get a tree from the user*/
 TreeNode *getTree(){
     // Take input for a tree then print it
@@ -394,15 +403,25 @@ TreeNode *getTree(){
 
 /* Now handle the above */
 
-// Get a number from 1 to 10 from the user, returning it zero-indexed
-int getTreeNum(std::string prompt = "Which # tree? (1 - 10) "){
+// Get an integer at all
+int getInt(std::string prompt){
     int num;
     do{
         std::cin.clear();
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         std::cout << prompt;
         std::cin >> num;
-    } while (std::cin.fail() || num<1 || num>9);
+    } while (std::cin.fail());
+
+    return num;
+}
+
+// Use getInt() to get an integer from 1 to 10 from the user, returning it zero-indexed
+int getTreeNum(std::string prompt = "Which # tree? (1 - 10) "){
+    int num;
+    do{
+        num = getInt(prompt);
+    } while (num<1 || num>9);
 
     return num - 1;
 }
@@ -448,7 +467,11 @@ int main(int argc, char *argv[]){
         } else if (input == "symmetrical"){
             std::cout << (isSymmetric(roots[getTreeNum()]) ? "Symmetrical.\n" : "Asymmetrical.\n"); 
         } else if (input == "balanced"){
-            std::cout << (isBalanced(roots[getTreeNum()]) ? "Balanced.\n" : "Unbalanced.\n"); 
+            std::cout << (isBalanced(roots[getTreeNum()]) ? "Balanced.\n" : "Unbalanced.\n");
+        } else if(input == "path"){
+            int t = getTreeNum();
+            int targetSum = getInt("What is the target sum? ");
+            std::cout << (hasPathSum(roots[t], targetSum) ? "Path found.\n" : "Path not found.\n");
         }
     } while (input != "exit");
 
