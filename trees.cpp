@@ -6,6 +6,7 @@
 #include <sstream>
 #include <algorithm>
 #include <iterator>
+#include <unordered_map>
 #include <vector>
 
 /* First, some overarching things*/
@@ -426,52 +427,93 @@ int getTreeNum(std::string prompt = "Which # tree? (1 - 10) "){
     return num - 1;
 }
 
+/* The interface */
+TreeNode *roots[10];
+
+void setFunc(){
+    int t = getTreeNum();
+
+    // Report the current tree
+    if (!roots[t]){
+        std::cout << "Tree #" << t+1 << " is currently empty.\n";
+    } else{
+        std::cout << "Tree #" << t+1 << " is currently:\n\n";
+        printTree(roots[t]);
+    }
+
+    // Enter a new tree
+    std::cout << "Setting tree #" << t+1 << ":\n\n";
+    roots[t] = getTree();
+}
+
+void printFunc(){
+    printTree(roots[getTreeNum()]);
+}
+
+void maxDepthFunc(){
+    int t = getTreeNum();
+    std::cout << "Maximum depth: " << maxDepth(roots[t]) << "\n";
+}
+
+void minDepthFunc(){
+    int t = getTreeNum();
+    std::cout << "Minimum depth: " << minDepth(roots[t]) << "\n";
+}
+
+void sameFunc(){
+    int t1 = getTreeNum();
+    int t2 = getTreeNum("Which other # tree? (1 - 10) ");
+    std::cout << (isSameTree(roots[t1], roots[t2]) ? "Same tree.\n" : "Different trees.\n");
+}
+
+void symFunc(){
+    std::cout << (isSymmetric(roots[getTreeNum()]) ? "Symmetrical.\n" : "Asymmetrical.\n");
+}
+
+void balancedFunc(){
+    std::cout << (isBalanced(roots[getTreeNum()]) ? "Balanced.\n" : "Unbalanced.\n");
+}
+
+void pathFunc(){
+    int t = getTreeNum();
+    int targetSum = getInt("What is the target sum? ");
+    std::cout << (hasPathSum(roots[t], targetSum) ? "Path found.\n" : "Path not found.\n");
+}
+
 int main(int argc, char *argv[]){
-    std::cout << "trees.cpp!\n\n";
+    std::cout << "trees.cpp!\n";
+    std::cout << "Type \"commands\" for a full list of commands.\n\n";
     
     // Let the user do things with ten trees, NULL by default
-    TreeNode *roots[10];
     for (int t=0; t<10; t++) roots[t] = nullptr;
+
+    // Create a map of commands to functions
+    std::unordered_map<std::string, void (*)()> commands;
+    commands.emplace("set", &setFunc);
+    commands.emplace("print", &printFunc);
+    commands.emplace("maxdepth", &maxDepthFunc);
+    commands.emplace("mindepth", &minDepthFunc);
+    commands.emplace("same", &sameFunc);
+    commands.emplace("symmetrical", &symFunc);
+    commands.emplace("balances", &balancedFunc);
+    commands.emplace("path", &pathFunc);
 
     std::string input;
     do {
         std::cout << "> ";
         std::cin >> input;
 
-        if (input == "set"){
-            int t = getTreeNum();
-
-            // Report the current tree
-            if (!roots[t]){
-                std::cout << "Tree #" << t+1 << " is currently empty.\n";
-            } else{
-                std::cout << "Tree #" << t+1 << " is currently:\n\n";
-                printTree(roots[t]);
-            }
-
-            // Enter a new tree
-            std::cout << "Setting tree #" << t+1 << ":\n\n";
-            roots[t] = getTree();
-        } else if (input == "print"){
-            printTree(roots[getTreeNum()]);
-        } else if (input == "maxdepth"){
-            int t = getTreeNum();
-            std::cout << "Maximum depth: " << maxDepth(roots[t]) << "\n";
-        } else if (input == "mindepth"){
-            int t = getTreeNum();
-            std::cout << "Minimum depth: " << minDepth(roots[t]) << "\n";
-        } else if (input == "same"){
-            int t1 = getTreeNum();
-            int t2 = getTreeNum("Which other # tree? (1 - 10) ");
-            std::cout << (isSameTree(roots[t1], roots[t2]) ? "Same tree.\n" : "Different trees.\n");
-        } else if (input == "symmetrical"){
-            std::cout << (isSymmetric(roots[getTreeNum()]) ? "Symmetrical.\n" : "Asymmetrical.\n"); 
-        } else if (input == "balanced"){
-            std::cout << (isBalanced(roots[getTreeNum()]) ? "Balanced.\n" : "Unbalanced.\n");
-        } else if(input == "path"){
-            int t = getTreeNum();
-            int targetSum = getInt("What is the target sum? ");
-            std::cout << (hasPathSum(roots[t], targetSum) ? "Path found.\n" : "Path not found.\n");
+        if (commands.find(input) != commands.end()){
+            commands.at(input)();
+        } else if (input == "commands"){
+            // List all commands in the map
+            std::cout << "Available commands:\n\n";
+            for (std::unordered_map<std::string, void (*)()>::iterator it = commands.begin();
+            it != commands.end();
+            ++it)
+                std::cout << it->first << "\n";
+        } else if (input != "exit"){
+            std::cout << "Command not recognised.\n";
         }
     } while (input != "exit");
 
