@@ -14,10 +14,25 @@ struct ListNode {
     int val;
     ListNode *next;
     ListNode(int x) : val(x), next(nullptr) {}
+    ListNode(int x, ListNode *next) : val(x), next(next){}
 };
 
 // Helper functions
 int hasCycle(ListNode *head);
+
+// Return the index of the node cycled back to – breaks if the list doesn't have a cycle
+int cycleStart(ListNode *head){
+    // Find the node in question
+    ListNode *cycledTo = head;
+    for (int i=0; i<=hasCycle(head); i++) cycledTo = cycledTo -> next;
+
+    // Then work out its index
+    int start = 0;
+    ListNode *scanner = head;
+    for (; scanner!=cycledTo; start++) scanner = scanner -> next;
+
+    return start;
+}
 
 // Must be paired with deleteList()
 ListNode *vecToList(std::vector<int> vals){
@@ -41,16 +56,9 @@ void printList(ListNode *head){
 
         if (p){
             /* Print the list with an extra arrow to indicate the loop back */
-            // Find the index of the node which is looped back to, since we have the index which loops to it
-            ListNode *cycledTo = head;
-            for (int i=0; i<=p; i++) cycledTo = cycledTo -> next;
-
-            int q = 0;
-            ListNode *scanner = head;
-            for (; scanner!=cycledTo; q++) scanner = scanner -> next;
-
             // Print the linear part
-            scanner = head;
+            int q = cycleStart(head);
+            ListNode *scanner = head;
             int cursorPos = 0;
             int pPos, qPos;
 
@@ -262,7 +270,7 @@ void loopList(ListNode *head){
 }
 
 // Remove a list's nth from last node
-ListNode* removeNthFromEnd(ListNode* head, int n) {
+ListNode *removeNthFromEnd(ListNode *head, int n) {
     // Find length of list
     int length = 0;
     ListNode *node = head;
@@ -285,6 +293,78 @@ ListNode* removeNthFromEnd(ListNode* head, int n) {
     delete old;
 
     return head;
+}
+
+// Swap every two adjacent pairs
+ListNode *swapPairs(ListNode *head) {
+    // Create a scanner node which always has p and q as its two next, which means starting
+    // before head
+    ListNode s = ListNode(0, head);
+    ListNode *scanner = &s;
+    bool first = true;
+
+    // Go provided there are two more nodes to swap
+    while (scanner->next && (scanner->next)->next){
+        // Swap
+        ListNode *tempp = scanner -> next;
+        scanner -> next = tempp -> next;
+        ListNode *tempq = (tempp->next) -> next;
+        (scanner->next) -> next = tempp;
+        tempp -> next = tempq;
+
+        if (first){
+            head = scanner -> next;
+            first = false;
+        }
+
+        // Step
+        scanner = (scanner->next) -> next;
+    }
+
+    return head;
+}
+
+// Create a replica of list p; doing this is easier when there is no cycle, but we'll
+// merge the two cases into one abstraction
+ListNode *copyList(ListNode *p){
+    if (!p) return nullptr;
+
+    int cycle = hasCycle(p);
+    ListNode *q;
+
+    if (cycle){
+        // Copy the linear part of the list
+        q = new ListNode(p -> val);
+        ListNode *scanner = q;
+        p = p -> next;
+
+        for (int i=1; i<=cycle; i++){
+            scanner -> next = new ListNode(p -> val);
+            std::cout << p->val << "\n";
+            scanner = scanner -> next;
+            p = p -> next;
+        }
+
+        // And close the loop
+        ListNode *loopedTo = q;
+        int cStart = cycleStart(p);
+
+        for (int i=0; i<=cStart; i++) loopedTo = loopedTo -> next;
+        std::cout << loopedTo->val << "\n";
+        scanner -> next = loopedTo;
+    } else{
+        q = new ListNode(p -> val);
+        ListNode *scanner = q;
+        p = p -> next;
+
+        while (p){
+            scanner -> next = new ListNode(p -> val);
+            scanner = scanner -> next;
+            p = p -> next;
+        }
+    }
+
+    return q;
 }
 
 /* The interface. All of the commands the user might call are given their own function so we can map them */
@@ -311,7 +391,7 @@ void printFunc(){
 void sortFunc(){
     int l = getListNum();
     heads[l] = sortList(heads[l]);
-    std::cout << "Updated list: ";
+    std::cout << "List sorted. Updated list: ";
     printList(heads[l]);
 }
 
@@ -319,7 +399,9 @@ void cycleFunc(){
     int l = getListNum();
     int p = hasCycle(heads[l]);
 
-    if (p){
+    if (!heads[l]){
+        std::cout << "No cycle (list empty).\n";
+    } else if (p){
         std::cout << "List #" << l+1 << " has a cycle, at node " << p << ".\n";
     } else{
         std::cout << "List does not have a cycle.\n";
@@ -327,32 +409,45 @@ void cycleFunc(){
 }
 
 void loopFunc(){
-    loopList(heads[getListNum()]);
-    std::cout << "List looped.\n";
+    int l = getListNum();
+    loopList(heads[l]);
+    std::cout << "List looped. New list: ";
+    printList(heads[l]);
 }
 
 void catFunc(){
     int l = getListNum();
     int m = getListNum("Which other # list? (1 - 10) ");
-    heads[l] = concatLists(heads[l], heads[m]);
-    std::cout << "New list #" << l+1 << ": ";
-    printList(heads[l]);
 
-    // So that we don't have multiple pointers to the same objects, confusing deleteList(), duplicate list m
-    int p = hasCycle(heads[m]);
-
-    if (p){
-        heads[m] = nullptr;
+    // Avert disaster
+    if (!heads[l]){
+        std::cout << "List #" << l+1 << " is empty.\n";
+    } else if (!heads[m]){
+        std::cout << "List #" << m+1 << " is empty.\n";
+    } else if (hasCycle(heads[l])){
+        std::cout << "Cannot concatenate to a list with a cycle.\n";
     } else{
-        ListNode *newMHead = new ListNode(heads[m] -> val);
-        ListNode *newMScanner = newMHead;
-        while (heads[m] -> next){
-            newMScanner -> next = new ListNode((heads[m]->next) -> val);
-            heads[m] = heads[m] -> next;
-            newMScanner = newMScanner -> next;
-        }
+        // Proceed
+        heads[l] = concatLists(heads[l], heads[m]);
+        std::cout << "New list #" << l+1 << ": ";
+        printList(heads[l]);
 
-        heads[m] = newMHead;
+        // So that we don't have multiple pointers to the same objects, confusing deleteList(), duplicate list m
+        int p = hasCycle(heads[m]);
+
+        if (p){
+            //heads[m] = nullptr;
+        } else{
+            ListNode *newMHead = new ListNode(heads[m] -> val);
+            ListNode *newMScanner = newMHead;
+            while (heads[m] -> next){
+                newMScanner -> next = new ListNode((heads[m]->next) -> val);
+                heads[m] = heads[m] -> next;
+                newMScanner = newMScanner -> next;
+            }
+
+            heads[m] = newMHead;
+        }
     }
 }
 
@@ -363,6 +458,27 @@ void nthFunc(){
 
     std::cout << "Removed. New list: ";
     printList(heads[l]);
+}
+
+void swapFunc(){
+    int l = getListNum();
+    heads[l] = swapPairs(heads[l]);
+    std::cout << "Pairs swapped. New list: ";
+    printList(heads[l]);
+}
+
+void copyFunc(){
+    int l = getListNum("Copy which # list? (1 - 10) ");
+    int m = getListNum("Copy to which other # list? (1 - 10) ");
+
+    if (heads[m]){
+        deleteList(heads[m]);
+        std::cout << "Clearing list #" << m+1 << "...\n";
+    }
+
+    heads[m] = copyList(heads[l]);
+    std::cout << "Copied. List #" << m+1 << " is now: ";
+    printList(heads[m]);
 }
 
 int main(int argc, char *argv[]){
@@ -382,6 +498,8 @@ int main(int argc, char *argv[]){
     commands.emplace("loop", &loopFunc);
     commands.emplace("cat", &catFunc);
     commands.emplace("nthfromend", &nthFunc);
+    commands.emplace("swap", &swapFunc);
+    commands.emplace("copy", &copyFunc);
 
     // Let the user do things
     std::string input;
