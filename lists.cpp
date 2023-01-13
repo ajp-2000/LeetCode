@@ -19,20 +19,7 @@ struct ListNode {
 
 // Helper functions
 int hasCycle(ListNode *head);
-
-// Return the index of the node cycled back to – breaks if the list doesn't have a cycle
-int cycleStart(ListNode *head){
-    // Find the node in question
-    ListNode *cycledTo = head;
-    for (int i=0; i<=hasCycle(head); i++) cycledTo = cycledTo -> next;
-
-    // Then work out its index
-    int start = 0;
-    ListNode *scanner = head;
-    for (; scanner!=cycledTo; start++) scanner = scanner -> next;
-
-    return start;
-}
+int cycleStart(ListNode *head);
 
 // Must be paired with deleteList()
 ListNode *vecToList(std::vector<int> vals){
@@ -69,7 +56,7 @@ void printList(ListNode *head){
                 if (i == q) qPos = cursorPos;
                 
                 std::cout << scanner -> val;
-                cursorPos += int(log10(scanner->val) + 1);
+                cursorPos += ((scanner->val==0) ? 1 : int(log10(scanner->val) + 1));
                 if (i < p){
                     std::cout << " -> ";
                     cursorPos += 4;
@@ -109,23 +96,15 @@ void printList(ListNode *head){
 
 void deleteList(ListNode *head){
     int p = hasCycle(head);
-    if (p){
-        // Deleting a linked list with cycles is a little more involved, but we can use the results of hasCycle()
-        for (int i=0; i<p; i++){
-            ListNode *temp = head -> next;
-            delete head;
-            head = temp;
-        }
 
+    // Account for either cycles or not
+    int i = 0;
+    while (head && (i<=p || p==0)){
+        ListNode *temp = head -> next;
         delete head;
-    } else{
-        // The simpler version, if there are no cycles
-        while (head){
-            ListNode *temp = head -> next;
-            delete head;
-            if (!temp) break;
-            head = temp;
-        }
+        if (!temp) break;
+        head = temp;
+        i++;
     }
 }
 
@@ -236,15 +215,6 @@ ListNode *sortList(ListNode *head){
     return result;
 }
 
-// Concatenate two lists
-ListNode *concatLists(ListNode *p, ListNode *q){
-    ListNode *scanner = p;
-    while (scanner -> next) scanner = scanner -> next;
-    scanner -> next = q;
-
-    return p;
-}
-
 // Check whether a list has a cycle in it, returning the zero-indexed position of the node which
 // points to a previous node, or zero if no cycle
 int hasCycle(ListNode *head) {
@@ -260,6 +230,20 @@ int hasCycle(ListNode *head) {
     }
 
     return 0;
+}
+
+// Return the index of the node cycled back to – breaks if the list doesn't have a cycle
+int cycleStart(ListNode *head){
+    // Find the node in question
+    ListNode *cycledTo = head;
+    for (int i=0; i<=hasCycle(head); i++) cycledTo = cycledTo -> next;
+
+    // Then work out its index
+    int start = 0;
+    ListNode *scanner = head;
+    for (; scanner!=cycledTo; start++) scanner = scanner -> next;
+
+    return start;
 }
 
 // Create a cycle by looping the last node of a list back to the first
@@ -336,21 +320,20 @@ ListNode *copyList(ListNode *p){
         // Copy the linear part of the list
         q = new ListNode(p -> val);
         ListNode *scanner = q;
-        p = p -> next;
+        ListNode *pScanner = p;
+        pScanner = pScanner -> next;
 
         for (int i=1; i<=cycle; i++){
-            scanner -> next = new ListNode(p -> val);
-            std::cout << p->val << "\n";
+            scanner -> next = new ListNode(pScanner -> val);
             scanner = scanner -> next;
-            p = p -> next;
+            pScanner = pScanner -> next;
         }
 
         // And close the loop
         ListNode *loopedTo = q;
         int cStart = cycleStart(p);
 
-        for (int i=0; i<=cStart; i++) loopedTo = loopedTo -> next;
-        std::cout << loopedTo->val << "\n";
+        for (int i=0; i<cStart; i++) loopedTo = loopedTo -> next;
         scanner -> next = loopedTo;
     } else{
         q = new ListNode(p -> val);
@@ -365,6 +348,18 @@ ListNode *copyList(ListNode *p){
     }
 
     return q;
+}
+
+// Concatenate two lists, returning the head of p with q appended; create a duplicate to copy
+// so we don't entangle p and q
+ListNode *concatLists(ListNode *p, ListNode *q){
+    ListNode *qCopy = copyList(q);
+
+    ListNode *scanner = p;
+    while (scanner -> next) scanner = scanner -> next;
+    scanner -> next = qCopy;
+
+    return p;
 }
 
 /* The interface. All of the commands the user might call are given their own function so we can map them */
@@ -402,7 +397,7 @@ void cycleFunc(){
     if (!heads[l]){
         std::cout << "No cycle (list empty).\n";
     } else if (p){
-        std::cout << "List #" << l+1 << " has a cycle, at node " << p << ".\n";
+        std::cout << "List #" << l+1 << " has a cycle, from node " << p << " to node " << cycleStart(heads[l]) << ".\n";
     } else{
         std::cout << "List does not have a cycle.\n";
     }
@@ -462,9 +457,13 @@ void nthFunc(){
 
 void swapFunc(){
     int l = getListNum();
-    heads[l] = swapPairs(heads[l]);
-    std::cout << "Pairs swapped. New list: ";
-    printList(heads[l]);
+    if (hasCycle(heads[l])){
+        std::cout << "Can't swap pairs in a list with a cycle.\n";
+    } else{
+        heads[l] = swapPairs(heads[l]);
+        std::cout << "Pairs swapped. New list: ";
+        printList(heads[l]);
+    }
 }
 
 void copyFunc(){
