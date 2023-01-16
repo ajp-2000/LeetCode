@@ -331,35 +331,26 @@ ListNode *copyList(ListNode *p){
     int cycle = hasCycle(p);
     ListNode *q;
 
-    if (cycle){
-        // Copy the linear part of the list
-        q = new ListNode(p -> val);
-        ListNode *scanner = q;
-        ListNode *pScanner = p;
+    q = new ListNode(p -> val);
+    ListNode *scanner = q;
+    ListNode *pScanner = p;
+    pScanner = pScanner -> next;
+
+    int i = 1;
+    while ((cycle && i<=cycle) || (!cycle && pScanner)){
+        scanner -> next = new ListNode(pScanner -> val);
+        scanner = scanner -> next;
         pScanner = pScanner -> next;
+        i++;
+    }
 
-        for (int i=1; i<=cycle; i++){
-            scanner -> next = new ListNode(pScanner -> val);
-            scanner = scanner -> next;
-            pScanner = pScanner -> next;
-        }
-
-        // And close the loop
+    // Close the loop (if required)
+    if (cycle){
         ListNode *loopedTo = q;
         int cStart = cycleStart(p);
 
-        for (int i=0; i<cStart; i++) loopedTo = loopedTo -> next;
+        for (i=0; i<cStart; i++) loopedTo = loopedTo -> next;
         scanner -> next = loopedTo;
-    } else{
-        q = new ListNode(p -> val);
-        ListNode *scanner = q;
-        p = p -> next;
-
-        while (p){
-            scanner -> next = new ListNode(p -> val);
-            scanner = scanner -> next;
-            p = p -> next;
-        }
     }
 
     return q;
