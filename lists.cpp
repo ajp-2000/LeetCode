@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <iterator>
 #include <string>
 #include <sstream>
 #include <unordered_map>
@@ -20,6 +21,7 @@ struct ListNode {
 // Helper functions
 int hasCycle(ListNode *head);
 int cycleStart(ListNode *head);
+int listLen(ListNode *head);
 
 // Must be paired with deleteList()
 ListNode *vecToList(std::vector<int> vals){
@@ -43,44 +45,56 @@ void printList(ListNode *head){
 
         if (p){
             /* Print the list with an extra arrow to indicate the loop back */
-            // Print the linear part
-            int q = cycleStart(head);
-            ListNode *scanner = head;
-            int cursorPos = 0;
-            int pPos, qPos;
+            if (p == -1){
+                // This is a single node linking to itself, which needs to be treated differently
+                std::cout << "\n" << head->val << "--\n";
 
-            std::cout << "\n";                                              // In case a previous function left us on a line
-            for (int i=0; i<=p; i++){
-                // Take note of where the arrow should start and end
-                if (i == p) pPos = cursorPos;
-                if (i == q) qPos = cursorPos;
-                
-                std::cout << scanner -> val;
-                cursorPos += ((scanner->val==0) ? 1 : int(log10(scanner->val) + 1));
-                if (i < p){
-                    std::cout << " -> ";
-                    cursorPos += 4;
+                std::cout << "^";
+                for (int i=0; i<=((head->val==0) ? 1 : int(log10(head->val) + 1)); i++) std::cout << " ";
+                std::cout << "|\n";
+
+                for (int i=0; i<=((head->val==0) ? 1 : int(log10(head->val) + 1)); i++) std::cout << "-";
+                std::cout << "\n";
+            } else{
+                // Print the linear part
+                int q = cycleStart(head);
+                ListNode *scanner = head;
+                int cursorPos = 0;
+                int pPos, qPos;
+
+                std::cout << "\n";                                              // In case a previous function left us on a line
+                for (int i=0; i<=p; i++){
+                    // Take note of where the arrow should start and end
+                    if (i == p) pPos = cursorPos;
+                    if (i == q) qPos = cursorPos;
+                    
+                    std::cout << scanner -> val;
+                    cursorPos += ((scanner->val==0) ? 1 : int(log10(scanner->val) + 1));
+                    if (i < p){
+                        std::cout << " -> ";
+                        cursorPos += 4;
+                    }
+
+                    scanner = scanner -> next;
                 }
+                std::cout << "\n";
 
-                scanner = scanner -> next;
+                // Then print the arrow
+                int i;
+                for (i=0; i<pPos; i++){
+                    std::cout << ((i==qPos) ? "^" : " ");
+                }
+                std::cout << "|\n";
+
+                for (i=0; i<pPos; i++){
+                    std::cout << ((i==qPos) ? "|" : " ");
+                }
+                std::cout << "|\n";
+
+                for (i=0; i<=qPos; i++) std::cout << " ";
+                for (; i<pPos; i++) std::cout << "-";
+                std::cout << std::endl;
             }
-            std::cout << "\n";
-
-            // Then print the arrow
-            int i;
-            for (i=0; i<pPos; i++){
-                std::cout << ((i==qPos) ? "^" : " ");
-            }
-            std::cout << "|\n";
-
-            for (i=0; i<pPos; i++){
-                std::cout << ((i==qPos) ? "|" : " ");
-            }
-            std::cout << "|\n";
-
-            for (i=0; i<=qPos; i++) std::cout << " ";
-            for (; i<pPos; i++) std::cout << "-";
-            std::cout << std::endl;
         } else{
             // Else print the list without the frills
             ListNode *scanner = head;
@@ -166,6 +180,19 @@ ListNode *getList(){
     return vecToList(vals);
 }
 
+// Find the length of a list
+int listLen(ListNode *head){
+    if (hasCycle(head)) return -1;
+
+    int len = 0;
+    while (head){
+        len++;
+        head = head -> next;
+    }
+
+    return len;
+}
+
 // Sort a list in ascending order
 ListNode *sortList(ListNode *head){
     ListNode *result = nullptr;
@@ -237,7 +264,12 @@ int hasCycle(ListNode *head) {
     int p = 0;
     
     while (head){
-        if (std::find(visited.begin(), visited.end(), head) != visited.end()) return p - 1;
+        if (std::find(visited.begin(), visited.end(), head) != visited.end()){
+            // Use -1 as code for a loop starting at 0 so that return value 0 can still represent false
+            if (p > 1) return p - 1;
+
+            return -1;
+        }
         visited.push_back(head);
 
         head = head -> next;
@@ -413,6 +445,178 @@ ListNode *mergeLists(ListNode *p, ListNode *q){
     return head;
 }
 
+// Merge k sorted lists; the same as for mergeLists() applies
+ListNode *mergeKLists(std::vector<ListNode *> &lists){
+    // Initial hassle
+    std::vector<ListNode *>::iterator i = lists.begin();
+    while (i != lists.end()){
+        if (!*i){
+            i = lists.erase(i);
+        } else{
+            ++i;
+        }
+    }
+
+    int k = lists.size();
+    if (k == 0) return nullptr;
+    if (k == 1) return lists[0];
+
+    // Because the lists are given as a vector, we can set our loop to continue provided there are any lists at all,
+    // and on each iteration it will run through only those lists we haven't yet used up and removed from the vector
+    ListNode *result;
+    ListNode *rScanner;
+    bool first = true;
+
+    while (lists.size()){
+        // Find the next smallest node and append it to our results list
+        int min = INT_MAX;
+        for (ListNode *head : lists) min = std::min(min, head->val);
+        if (first){
+            result = new ListNode(min);
+            rScanner = result;
+            first = false;
+        } else{
+            rScanner -> next = new ListNode(min);
+            rScanner = rScanner -> next;
+        }
+
+        // Remove that node from our source material
+        for (int l=0; l<lists.size(); l++){
+            if (lists[l]->val == min){
+                ListNode *temp = lists[l];
+
+                // Either shift the list forwards, or remove it entirely if there's nothing left
+                if (temp -> next){
+                    lists[l] = temp -> next;
+                } else{
+                    lists.erase(lists.begin() + l);
+                }
+                delete temp;
+
+                break;
+            }
+        }
+    }
+
+    return result;
+}
+
+// Rotate a list right by k places
+ListNode *rotateRight(ListNode *head, int k){
+    if (k==0 || !head || !head->next) return head;              // A single node doesn't need rotating
+    k %= listLen(head);
+
+    ListNode *result = head;
+    while (k > 0){
+        /* Remove the last node and place it at the head of the list */
+        // Scan forward to the penultimate node
+        ListNode *scanner = result;
+        while (scanner->next && (scanner->next)->next) scanner = scanner -> next;
+
+        // Isolate the last node
+        ListNode *temp = scanner -> next;
+        scanner -> next = nullptr;
+
+        // Prepend it to the head
+        temp -> next = result;
+        result = temp;
+
+        k--;
+    }
+
+    return result;
+}
+
+// Remove all nodes which have duplicates value-wise from a sorted list, i.e. [1, 2, 3, 3, 4] becomes [1, 2, 4]
+ListNode *deleteDuplicates(ListNode *head){
+    if (!head) return nullptr;
+
+    ListNode *scanner = head;
+    std::vector<int> vals;
+    std::vector<int> duplicates;
+
+    // Do a first pass to work out which values are duplicate
+    for (; scanner; scanner=scanner->next){
+        if (find(vals.begin(), vals.end(), scanner->val) != vals.end()){
+            duplicates.push_back(scanner -> val);
+        } else{
+            vals.push_back(scanner -> val);
+        }
+    }
+
+    // Then remove nodes with that value
+    for (scanner=head; scanner; scanner=scanner->next){
+        if (find(duplicates.begin(), duplicates.end(), scanner->val) == duplicates.end()){
+            // The result starts here, so delete prior nodes and set head to scanner
+            while (head != scanner){
+                ListNode *temp = head;
+                head = temp -> next;
+                delete temp;
+            }
+
+            break;
+        }
+
+        // If all nodes are duplicates
+        if (!scanner -> next) return nullptr;
+    }
+
+    scanner = head;
+    while (scanner -> next){
+        if (find(duplicates.begin(), duplicates.end(), scanner->next->val) != duplicates.end()){
+            ListNode *temp = scanner -> next;
+            if (temp->next){
+                scanner -> next = temp -> next;
+            } else{
+                scanner -> next = nullptr;
+            }
+
+            delete temp;
+        } else{
+            scanner = scanner -> next;
+        }
+    }
+
+    return head;
+}
+
+// Reverse a list in groups of k nodes
+ListNode *reverseKGroup(ListNode *head, int k){
+    ListNode *dummy = new ListNode(0, head);
+    ListNode *scanner = dummy;
+
+    while (scanner -> next){
+        // Check we still have k nodes to work with
+        ListNode *checker = scanner;
+        std::vector<ListNode *> group;
+
+        for (int kk=0; kk<k; kk++){
+            checker = checker -> next;
+            if (!checker) break;
+            group.push_back(checker);
+        }
+        if (!checker) break;
+
+        // Reverse the k nodes starting at scanner -> next
+        ListNode *temp = checker -> next;
+        for (auto it=group.rbegin(); it!=group.rend(); ++it){
+            std::cout << (*it)->val << "\n";
+            scanner -> next = *it;
+            scanner = scanner -> next;
+        }
+        std::cout << "temp; " << temp->val << "\n";
+        scanner -> next = temp;
+
+        // Step k nodes forward
+        scanner = checker;
+    }
+
+    head = dummy -> next;
+    delete dummy;
+
+    return head;
+}
+
 /* The interface. All of the commands the user might call are given their own function so we can map them */
 ListNode *heads[10];
 
@@ -434,6 +638,17 @@ void printFunc(){
     printList(heads[getListNum()]);
 }
 
+void lenFunc(){
+    int l = getListNum();
+    int len = listLen(heads[l]);
+
+    if (len == -1){
+        std::cout << "List #" << l+1 << " has a cycle.\n";
+    } else{
+        std::cout << "List #" << l+1 << " has " << len << " nodes.\n";
+    }
+}
+
 void sortFunc(){
     int l = getListNum();
     heads[l] = sortList(heads[l]);
@@ -448,7 +663,7 @@ void cycleFunc(){
     if (!heads[l]){
         std::cout << "No cycle (list empty).\n";
     } else if (p){
-        std::cout << "List #" << l+1 << " has a cycle, from node " << p << " to node " << cycleStart(heads[l]) << ".\n";
+        std::cout << "List #" << l+1 << " has a cycle, from node " << std::max(0, p) << " to node " << cycleStart(heads[l]) << ".\n";
     } else{
         std::cout << "List does not have a cycle.\n";
     }
@@ -549,13 +764,8 @@ void mergeFunc(){
     ListNode *p = heads[l];
     ListNode *q = copyList(heads[m]);
 
-    if (!isSorted(p)){
-        printList(p);
-        p = sortList(p);
-    }
-    if (!isSorted(q)){
-        q = sortList(q);
-    }
+    if (!isSorted(p)) p = sortList(p);
+    if (!isSorted(q)) q = sortList(q);
 
     if (!(heads[l] = mergeLists(p, q))){
         std::cout << "Both lists are empty.\n";
@@ -563,6 +773,72 @@ void mergeFunc(){
         std::cout << "Lists merged. List #" << l+1 << " is now: ";
         printList(heads[l]);
     }
+}
+
+void mergeKFunc(){
+    int k = getInt("How many lists? ");
+    if (k < 2){
+        std::cout << "Can only merge two or more lists.\n";
+        return;
+    }
+    std::cout << "The result of the merge will be stored at the first list specified.\n\n";
+
+    int listNums[k];
+    for (int l=0; l<k; l++) listNums[l] = getListNum("Which # for list number " + std::to_string(l+1) + "? ");
+
+    // Gather the lists to pass to mergeKLists() as a vector; all but the first are duplicates of heads[k] because the merge will use the 
+    // same nodes we pass it (and store these in a list starting at the first head)
+    std::vector<ListNode *> listsVec;
+    for (int l=0; l<k; l++){
+        ListNode *curr = ((l==0) ?  heads[listNums[0]] : copyList(heads[listNums[l]]));
+        listsVec.push_back(curr);
+    }
+
+    // Pass the gathered lists
+    heads[listNums[0]] = mergeKLists(listsVec);
+    std::cout << "Lists merged. List #" << listNums[0]+1 << " is now: ";
+    printList(heads[listNums[0]]);
+}
+
+void rotateFunc(){
+    int l = getListNum();
+    int k = getInt("Rotate by how many places? ");
+
+    if (k < 0){
+        std::cout << "Rotation must be by a positive number of places.\n";
+    } else if (hasCycle(heads[l])){
+        std::cout << "Can't rotate a list with a cycle.\n";
+    } else{
+        heads[l] = rotateRight(heads[l], k);
+        std::cout << "List rotated. New list: ";
+        printList(heads[l]);
+    }
+}
+
+void deleteDuplicatesFunc(){
+    int l = getListNum();
+    if (!isSorted(heads[l])) heads[l] = sortList(heads[l]);
+
+    if (!heads[l]){
+        std::cout << "List empty.\n";
+    } else{
+        heads[l] = deleteDuplicates(heads[l]);
+        std::cout << "Duplicates removed. List #" << l+1 << " is now: ";
+        printList(heads[l]);
+    }
+}
+
+void reverseKFunc(){
+    int l = getListNum();
+    int k = getInt("Enter k: ");
+    if (k < 1){
+        std::cout << "k must be at least 1.\n";
+        return;
+    }
+
+    heads[l] = reverseKGroup(heads[l], k);
+    std::cout << "Reversal complete. List is now: ";
+    printList(heads[l]);
 }
 
 int main(int argc, char *argv[]){
@@ -577,6 +853,7 @@ int main(int argc, char *argv[]){
     std::unordered_map<std::string, void (*)()> commands;
     commands.emplace("set", &setFunc);
     commands.emplace("print", &printFunc);
+    commands.emplace("len", &lenFunc);
     commands.emplace("sort", &sortFunc);
     commands.emplace("cycle", &cycleFunc);
     commands.emplace("loop", &loopFunc);
@@ -586,6 +863,10 @@ int main(int argc, char *argv[]){
     commands.emplace("copy", &copyFunc);
     commands.emplace("sorted", &sortedFunc);
     commands.emplace("merge", &mergeFunc);
+    commands.emplace("mergek", &mergeKFunc);
+    commands.emplace("rotate", &rotateFunc);
+    commands.emplace("duplicates", &deleteDuplicatesFunc);
+    commands.emplace("reversek", &reverseKFunc);
 
     // Let the user do things
     std::string input;
