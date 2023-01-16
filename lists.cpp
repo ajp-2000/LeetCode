@@ -37,7 +37,7 @@ ListNode *vecToList(std::vector<int> vals){
 
 void printList(ListNode *head){
     if (!head){
-        std::cout << "List empty.\n";
+        std::cout << "List empty." << std::endl;
     } else{
         int p = hasCycle(head);
 
@@ -80,16 +80,18 @@ void printList(ListNode *head){
 
             for (i=0; i<=qPos; i++) std::cout << " ";
             for (; i<pPos; i++) std::cout << "-";
-            std::cout << "\n";
+            std::cout << std::endl;
         } else{
             // Else print the list without the frills
             ListNode *scanner = head;
             while (scanner){
                 std::cout << scanner->val;
-                std::cout << ((scanner->next) ? " -> " : "\n");
+                if (scanner -> next) std::cout << " -> ";
                 scanner = scanner -> next;
                 if (!scanner) break;
             }
+
+            std::cout << std::endl;
         }
     }
 }
@@ -166,10 +168,10 @@ ListNode *getList(){
 
 // Sort a list in ascending order
 ListNode *sortList(ListNode *head){
-    ListNode *result;
-    ListNode *rScanner;
+    ListNode *result = nullptr;
+    ListNode *rScanner = nullptr;
 
-    ListNode *scanner;
+    ListNode *scanner = nullptr;
     int min;
     int pos;                                                            // Zero-indexed
 
@@ -193,7 +195,7 @@ ListNode *sortList(ListNode *head){
 
         // Then remove that node (the first node with its value) from the given list, by scanning to the previous node
         if (head->val == min){
-            head = head ->next;
+            head = head -> next;
         } else{
             scanner = head;
             while (scanner->next->val != min) scanner = scanner -> next;
@@ -213,6 +215,19 @@ ListNode *sortList(ListNode *head){
     }
 
     return result;
+}
+
+// Check if a list is sorted in an ascending order
+bool isSorted(ListNode *head){
+    int prev = INT_MIN;
+
+    while (head){
+        if (head->val < prev) return false;
+        prev = head -> val;
+        head = head -> next;
+    }
+
+    return true;
 }
 
 // Check whether a list has a cycle in it, returning the zero-indexed position of the node which
@@ -362,6 +377,51 @@ ListNode *concatLists(ListNode *p, ListNode *q){
     return p;
 }
 
+// Merge two sorted lists into a long sorted list. Always to be called on copies of the original lists, because this function
+// uses the same nodes, just reordering them
+ListNode *mergeLists(ListNode *p, ListNode *q){
+    if (!p) return q;
+    if (!q) return p;
+
+    // Start the merged list
+    ListNode *head = nullptr;
+    if (p->val < q->val){
+        head = p;
+        p = p -> next;
+    } else{
+        head =  q;
+        q = q -> next;
+    }
+
+    // Loop through it
+    ListNode *scanner = head;
+    while (p && q){
+        if (p->val < q->val){
+            scanner -> next = p;
+            scanner = scanner -> next;
+            p = p -> next;
+        } else{
+            scanner -> next = q;
+            scanner = scanner -> next;
+            q = q -> next;
+        }
+    }
+
+    while (p){
+        scanner -> next = p;
+        scanner = scanner -> next;
+        p = p -> next;
+    }
+
+    while (q){
+        scanner -> next = q;
+        scanner = scanner -> next;
+        q = q -> next;
+    }
+
+    return head;
+}
+
 /* The interface. All of the commands the user might call are given their own function so we can map them */
 ListNode *heads[10];
 
@@ -480,6 +540,40 @@ void copyFunc(){
     printList(heads[m]);
 }
 
+void sortedFunc(){
+    int l = getListNum();
+
+    if (!heads[l]){
+        std::cout << "List empty.\n";
+    } else if (isSorted(heads[l])){
+        std::cout << "List sorted.\n";
+    } else{
+        std::cout << "List unsorted.\n";
+    }
+}
+
+void mergeFunc(){
+    int l = getListNum();
+    int m = getListNum("Which other # list? (1 - 10) ");
+    ListNode *p = heads[l];
+    ListNode *q = copyList(heads[m]);
+
+    if (!isSorted(p)){
+        printList(p);
+        p = sortList(p);
+    }
+    if (!isSorted(q)){
+        q = sortList(q);
+    }
+
+    if (!(heads[l] = mergeLists(p, q))){
+        std::cout << "Both lists are empty.\n";
+    } else{
+        std::cout << "Lists merged. List #" << l+1 << " is now: ";
+        printList(heads[l]);
+    }
+}
+
 int main(int argc, char *argv[]){
     std::cout << "Welcome to the LeetCode Linked List Manipulator. Enter a command like 'set', 'print', or 'sort'.\n";
     std::cout << "Try \"commands\" for a list of commands.\n\n";
@@ -499,6 +593,8 @@ int main(int argc, char *argv[]){
     commands.emplace("nthfromend", &nthFunc);
     commands.emplace("swap", &swapFunc);
     commands.emplace("copy", &copyFunc);
+    commands.emplace("sorted", &sortedFunc);
+    commands.emplace("merge", &mergeFunc);
 
     // Let the user do things
     std::string input;
