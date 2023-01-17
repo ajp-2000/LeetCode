@@ -586,7 +586,7 @@ ListNode *reverseKGroup(ListNode *head, int k){
     ListNode *scanner = dummy;
 
     while (scanner -> next){
-        // Check we still have k nodes to work with
+        // Check we still have k nodes to work with, at the same time as making a vector of the next k nodes
         ListNode *checker = scanner;
         std::vector<ListNode *> group;
 
@@ -596,20 +596,91 @@ ListNode *reverseKGroup(ListNode *head, int k){
             group.push_back(checker);
         }
         if (!checker) break;
+        checker = checker -> next;
 
         // Reverse the k nodes starting at scanner -> next
-        ListNode *temp = checker -> next;
         for (auto it=group.rbegin(); it!=group.rend(); ++it){
             std::cout << (*it)->val << "\n";
             scanner -> next = *it;
             scanner = scanner -> next;
         }
-        std::cout << "temp; " << temp->val << "\n";
-        scanner -> next = temp;
 
-        // Step k nodes forward
-        scanner = checker;
+        scanner -> next = checker;
     }
+
+    head = dummy -> next;
+    delete dummy;
+
+    return head;
+}
+
+// Rearrange a list such that all nodes with val < x come before all with val >= x
+// Preserve order within each partition
+ListNode *partitionList(ListNode *head, int x){
+    ListNode *dummy = new ListNode(0, head);
+    ListNode *scanner = dummy;
+    ListNode *part1 = nullptr;
+    ListNode *dummy1 = new ListNode(0, part1);
+    ListNode *scanner1 = dummy1;
+
+    // Go through the list siphoning off nodes < x to the tail
+    while (scanner && scanner->next){
+        if (scanner->next->val < x){
+            // Remove the node from the main list
+            ListNode *temp = scanner -> next;
+            scanner -> next = temp -> next;
+
+            // And add it to the first partition
+            scanner1 -> next = temp;
+            scanner1 = scanner1 -> next;
+            scanner1 -> next = nullptr;
+        } else{
+            // To avoid the moving making us skip a node
+            scanner = scanner -> next;
+        }
+    }
+
+    // Append the two partitions
+    ListNode *part2 = dummy -> next;
+    if (dummy1 -> next){
+        dummy -> next = dummy1 -> next;
+        scanner1 -> next = part2;
+    }
+
+    head = dummy -> next;
+    delete dummy;
+    delete dummy1;
+
+    return head;
+}
+
+// Reverse nodes between n = left and right
+// We can assume left and right are within range
+ListNode *reverseBetween(ListNode *head, int left, int right){
+    // Seek to the node before the first to reverse
+    ListNode *dummy = new ListNode(0, head);
+    ListNode *scanner = dummy;
+    for (int i=0; i<left; i++)
+        scanner = scanner -> next;
+
+    // Jump ahead to find the tail
+    ListNode *tail = scanner;
+    for (int i=left; i<=right; i++) tail = tail -> next;
+    
+    // Join one node at a time to the tail, working backwards until we hit the starting point
+    ListNode *tScanner = tail;
+    while (scanner != tail){
+        ListNode *temp = scanner -> next;
+        scanner -> next = tScanner;
+        tScanner = scanner;
+        scanner = temp;
+    }
+
+    // Join the beginning of the list to the node that is now at the starting point
+    scanner = dummy;
+    for (int i=0; i<left-1; i++)
+        scanner = scanner -> next;
+    scanner -> next = tScanner;
 
     head = dummy -> next;
     delete dummy;
@@ -834,10 +905,52 @@ void reverseKFunc(){
     if (k < 1){
         std::cout << "k must be at least 1.\n";
         return;
+    } else if (k > listLen(heads[l])){
+        std::cout << "Reversal redundant: the list has fewer than " << k << " nodes.\n";
+        return;
     }
 
     heads[l] = reverseKGroup(heads[l], k);
     std::cout << "Reversal complete. List is now: ";
+    printList(heads[l]);
+}
+
+void partitionFunc(){
+    int l = getListNum();
+    int x = getInt("Enter the partition boundary: ");
+
+    heads[l] = partitionList(heads[l], x);
+    std::cout << "Partition complete. List is now: ";
+    printList(heads[l]);
+}
+
+void reverseBetweenFunc(){
+    int l = getListNum();
+    if (!heads[l]){
+        std::cout << "List empty.\n";
+        return;
+    }
+
+    int a = getInt("Reverse nodes starting at position (not zero-indexed): ");
+    if (a < 1){
+        std::cout << "Cannot start at a negative index.\n";
+        return;
+    } else if (a > listLen(heads[l])){
+        std::cout << "Node out of range.\n";
+        return;
+    }
+
+    int b = getInt("And up to: ");
+    if (b < a){
+        std::cout << "The stopping node cannot be before the starting node.\n";
+        return;
+    } else if (b > listLen(heads[l])){
+        std::cout << "Node out of range.\n";
+        return;
+    }
+
+    heads[l] = reverseBetween(heads[l], a, b);
+    std::cout << "Reversed. List #" << l+1 << " is now: ";
     printList(heads[l]);
 }
 
@@ -867,6 +980,8 @@ int main(int argc, char *argv[]){
     commands.emplace("rotate", &rotateFunc);
     commands.emplace("duplicates", &deleteDuplicatesFunc);
     commands.emplace("reversek", &reverseKFunc);
+    commands.emplace("partition", &partitionFunc);
+    commands.emplace("reversebet", &reverseBetweenFunc);
 
     // Let the user do things
     std::string input;
