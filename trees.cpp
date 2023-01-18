@@ -11,6 +11,9 @@
 
 /* First, some overarching things*/
 
+// The character that represents non-existent nodes on a tree
+const std::string NULL_CHAR = " ";
+
 // The struct for a tree node: trees will be passed by their heads
 struct TreeNode {
     int val;
@@ -23,8 +26,9 @@ struct TreeNode {
 };
 
 TreeNode *listToRoot(int vals[], int len);
-bool deleteTree(TreeNode *root);
+bool deleteTree(TreeNode* root);
 int maxDepth(TreeNode* root);
+int maxVal(TreeNode* root);
 std::vector<TreeNode> nodesAtDepth(TreeNode *root, int depth);
 std::vector<std::string> valsAtDepth(TreeNode *root, int depth);
 bool printTree(TreeNode *root);
@@ -79,7 +83,7 @@ TreeNode *listToRoot(int vals[], int len){
 
             if (depth < maxDepth){
                 if (tree[depth+1][i*2] != INT_MIN && tree[depth+1][i*2] != INT_MAX){
-                    std::cout << tree[depth+1][i*2] << "\n";
+                    //std::cout << tree[depth+1][i*2] << "\n";
                     // Work out how many nodes along this corresponds to
                     int k = 0;
                     for (int j=0; j<i*2; j++){
@@ -90,7 +94,7 @@ TreeNode *listToRoot(int vals[], int len){
                     leftptr = nodes[0][k];
                 }
                 if (tree[depth+1][i*2 + 1] != INT_MIN && tree[depth+1][i*2 + 1] != INT_MAX){
-                    std::cout << tree[depth+1][i*2 + 1] << "\n";
+                    //std::cout << tree[depth+1][i*2 + 1] << "\n";
                     int k = 0;
                     for (int j=0; j<i*2 + 1; j++){
                         if (tree[depth+1][j] != INT_MIN && tree[depth+1][j] != INT_MAX)
@@ -161,26 +165,20 @@ std::vector<TreeNode> nodesAtDepth(TreeNode *root, int depth){
     return nodes;
 }
 
-// Return a list of three-character node values, or " + " for non-existent nodes
+// Return a list of n-character node values, or " + " for non-existent nodes
 // Used by printTree()
-std::vector<std::string> valsAtDepth(TreeNode *root, int depth){
+std::vector<std::string> valsAtDepth(TreeNode *root, int depth, int n){
     std::vector<std::string> vals;
     std::vector<TreeNode> nodes = nodesAtDepth(root, depth);
 
     for (TreeNode node : nodes){
-        std::string val;
-        if (node.val == INT_MIN){
-            val = " + ";
-        } else{
-            if (abs(node.val) < 10){
-                val = " " + std::to_string(node.val) + " ";
-            } else{
-                val = std::to_string(node.val);
-                while (val.size() < 3)
-                    val += " ";
-            }
-        }
-        
+        std::string val = "";
+        int digits = (node.val==0 || node.val==INT_MIN) ? 1 : int(log10(node.val) + 1);
+        int preSize = (n - digits) / 2;
+
+        for (int i=0; i<preSize; i++) val += " ";
+        val += (node.val > INT_MIN) ? std::to_string(node.val) : NULL_CHAR;
+        for (int i=0; i<n-digits-preSize; i++) val += " ";
         vals.push_back(val);
     }
 
@@ -188,50 +186,56 @@ std::vector<std::string> valsAtDepth(TreeNode *root, int depth){
 }
 
 // Print an ascii visualisation of a tree, returning true if something was printed
-/* The goals:
-*            66
-*      67          78
-*   56    45    45    45
-* 43 56 87 34 01 54 06 38
-* 
-*      77
-*   55    44
-* 76 45  90 12
-*/
+// - Every node is given: 3 characters by default, or more if the tree contains longer vals
+// - Nodes are separated by: 1 character if places is odd, or two if even;
+// or more if required by the spacing of nodes lower down the tree
 bool printTree(TreeNode *root){
     if (!root){
         std::cout << "Tree empty.\n";
         return false;
     }
 
+    // Establish the spacing
+    int places = std::max(3, int(log10(maxVal(root)))+1);
+    int spaces = 2 - (places % 2);
     int depth = maxDepth(root);
-    int maxWidth = (depth%2 == 0) ? (3*pow(2, depth-1)) : (3*pow(2, depth-1) + 1);
 
-    // Print one row at a time
-    for (int d=1; d<=depth; d++){
-        std::vector<std::string> nodeVals = valsAtDepth(root, d-1);
-        std::string line = "";
+    // Set out the rows from the bottom up
+    std::vector<std::vector<int> > rows;
+    for (int d=depth-1; d>=0; d--){
+        std::vector<int> row;
 
-        for (int n=0; n<pow(2, d-1); n++){
-            line += nodeVals[n];
-
-            if (d < depth){
-                // Supply the gaps between nodes
-                if (n < pow(2, d-1)-1){
-                    if (depth%2 == 0){
-                        line += std::string(pow(3, depth-d), ' ');
-                    } else{
-                        line += std::string(pow(3, depth-d), ' ');
-                    }
-                }
+        if (d == depth-1){
+            int pos = 0;
+            for (int i=0; i<pow(2, d); i++){
+                row.push_back(pos);
+                pos += places + spaces;
+            }
+        } else{
+            for (int i=0; i<pow(2, d); i++){
+                row.push_back(int((rows[0][i*2] + rows[0][i*2+1]) / 2));
             }
         }
 
-        int padding = (maxWidth-line.size()) / 2;
-        for (int i=0; i<padding; i++)
-            std::cout << " ";
-        std::cout << line << "\n\n";
+        rows.insert(rows.begin(), row);
     }
+
+    // Then print
+    for (int d=0; d<depth; d++){
+        int cursor = 0;
+        std::vector<std::string> nodeVals = valsAtDepth(root, d, places);
+
+        for (int i=0; i<nodeVals.size(); i++){
+            for (int j=cursor; j<rows[d][i]; j++){
+                std::cout << " ";
+                cursor++;
+            }
+            std::cout << nodeVals[i];
+            cursor += places;
+        }
+        std::cout << "\n\n";
+    }
+    std::cout << std::endl;
 
     return true;
 }
@@ -247,6 +251,18 @@ int maxDepth(TreeNode* root) {
     int b = maxDepth(root->right);
 
     return 1 + std::max(a, b);
+}
+
+// Return the greatest absolute node-value in the tree
+int maxVal(TreeNode* root){
+    if (!root) return INT_MIN;
+
+    int lVal = INT_MIN;
+    int rVal = INT_MIN;
+    if (root -> left) lVal = maxVal(root->left);
+    if (root -> right) rVal = maxVal(root->right);
+
+    return std::max(abs(root->val), std::max(lVal, rVal));
 }
 
 // Return the minimum depth of a tree
@@ -327,7 +343,51 @@ bool hasPathSum(TreeNode* root, int targetSum) {
     return (hasPathSum(root->left, targetSum-root->val)) || (hasPathSum(root->right, targetSum-root->val));
 }
 
-/* Get a tree from the user*/
+// Flatten the tree to the right by pre-order traversal, effectively creating a singly-linked list
+void flatten(TreeNode* root){
+    if (root){
+        if (root -> left) flatten(root->left);
+        if (root -> right) flatten(root->right);
+
+        if (root->left){
+            TreeNode *temp = root -> right;
+            root -> right = root -> left;
+            root -> left = nullptr;
+
+            TreeNode *rScanner = root -> right;
+            while (rScanner -> right) rScanner = rScanner -> right;
+            rScanner -> right = temp;
+        }
+    }
+}
+
+std::vector<int> preorderTraversal(TreeNode* root){
+    std::vector<int> result;
+    if (!root) return result;
+
+    result.push_back(root->val);
+    std::vector<int> left = preorderTraversal(root->left);
+    result.insert(result.end(), left.begin(), left.end());
+    std::vector<int> right = preorderTraversal(root->right);
+    result.insert(result.end(), right.begin(), right.end());
+
+    return result;
+}
+
+std::vector<int> postorderTraversal(TreeNode* root){
+    std::vector<int> result;
+    if (!root) return result;
+
+    std::vector<int> left = postorderTraversal(root->left);
+    result.insert(result.end(), left.begin(), left.end());
+    std::vector<int> right = postorderTraversal(root->right);
+    result.insert(result.end(), right.begin(), right.end());
+    result.push_back(root->val);
+
+    return result;
+}
+
+// Get a tree from the user
 TreeNode *getTree(){
     // Take input for a tree then print it
     int depth = 0;
@@ -396,7 +456,7 @@ TreeNode *getTree(){
     // Wrap up
     TreeNode *root = new TreeNode();
     root = listToRoot(treeArray, sizeof(treeArray)/sizeof(treeArray[0]));
-    std::cout << "Tree formed:\n\n";
+    std::cout << "\nTree formed:\n\n";
     printTree(root);
 
     return root;
@@ -480,6 +540,39 @@ void pathFunc(){
     std::cout << (hasPathSum(roots[t], targetSum) ? "Path found.\n" : "Path not found.\n");
 }
 
+void flattenFunc(){
+    int t = getTreeNum();
+    flatten(roots[t]);
+    std::cout << "Flattened:\n";
+    printTree(roots[t]);
+}
+
+void preorderFunc(){
+    int t = getTreeNum();
+    if (!roots[t]){
+        std::cout << "Tree empty.\n";
+    } else{
+        std::vector<int> traversal = preorderTraversal(roots[t]);
+        std::cout << "Pre-order traversal: ";
+        for (int t : traversal)
+            std::cout << t << " ";
+        std::cout << "\n";
+    }
+}
+
+void postorderFunc(){
+    int t = getTreeNum();
+    if (!roots[t]){
+        std::cout << "Tree empty.\n";
+    } else{
+        std::vector<int> traversal = postorderTraversal(roots[t]);
+        std::cout << "Pre-order traversal: ";
+        for (int t : traversal)
+            std::cout << t << " ";
+        std::cout << "\n";
+    }
+}
+
 int main(int argc, char *argv[]){
     std::cout << "trees.cpp!\n";
     std::cout << "Type \"commands\" for a full list of commands.\n\n";
@@ -497,6 +590,9 @@ int main(int argc, char *argv[]){
     commands.emplace("symmetrical", &symFunc);
     commands.emplace("balances", &balancedFunc);
     commands.emplace("path", &pathFunc);
+    commands.emplace("flatten", &flattenFunc);
+    commands.emplace("preorder", &preorderFunc);
+    commands.emplace("postorder", &postorderFunc);
 
     std::string input;
     do {
