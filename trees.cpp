@@ -1,4 +1,4 @@
-/* trees.cpp – A number of functions to do things with trees, built based on several LeetCode challenges. */
+/* trees.cpp – A number of functions to do things with binary trees, built based on several LeetCode challenges. */
 
 #include <iostream>
 #include <cmath>
@@ -28,7 +28,7 @@ struct TreeNode {
 TreeNode *listToRoot(int vals[], int len);
 bool deleteTree(TreeNode* root);
 int maxDepth(TreeNode* root);
-int maxVal(TreeNode* root);
+int maxAbsVal(TreeNode* root);
 std::vector<TreeNode> nodesAtDepth(TreeNode *root, int depth);
 std::vector<std::string> valsAtDepth(TreeNode *root, int depth);
 bool printTree(TreeNode *root);
@@ -196,7 +196,7 @@ bool printTree(TreeNode *root){
     }
 
     // Establish the spacing
-    int places = std::max(3, int(log10(maxVal(root)))+1);
+    int places = std::max(3, int(log10(maxAbsVal(root)))+1);
     int spaces = 2 - (places % 2);
     int depth = maxDepth(root);
 
@@ -254,13 +254,13 @@ int maxDepth(TreeNode* root) {
 }
 
 // Return the greatest absolute node-value in the tree
-int maxVal(TreeNode* root){
+int maxAbsVal(TreeNode* root){
     if (!root) return INT_MIN;
 
     int lVal = INT_MIN;
     int rVal = INT_MIN;
-    if (root -> left) lVal = maxVal(root->left);
-    if (root -> right) rVal = maxVal(root->right);
+    if (root -> left) lVal = maxAbsVal(root->left);
+    if (root -> right) rVal = maxAbsVal(root->right);
 
     return std::max(abs(root->val), std::max(lVal, rVal));
 }
@@ -343,6 +343,33 @@ bool hasPathSum(TreeNode* root, int targetSum) {
     return (hasPathSum(root->left, targetSum-root->val)) || (hasPathSum(root->right, targetSum-root->val));
 }
 
+// Return all root-to-leaf paths with the target sum
+std::vector<std::vector<int> > pathSum(TreeNode* root, int targetSum){
+    std::vector<std::vector<int> > paths;
+
+    if (root){
+        std::vector<int> path;
+        path.push_back(root -> val);
+
+        if (root->val==targetSum && (!root->left && !root->right))
+                paths.push_back(path);
+
+        std::vector<TreeNode*> children;
+        if (root -> left) children.push_back(root -> left);
+        if (root -> right) children.push_back(root -> right);
+
+        for (TreeNode* child : children){
+            std::vector<std::vector<int> > stubs = pathSum(child, targetSum - (root->val));
+            for (int s=0; s<stubs.size(); s++){
+                stubs[s].insert(stubs[s].begin(), path.begin(), path.end());
+                paths.push_back(stubs[s]);
+            }
+        }
+    }
+
+    return paths;
+}
+
 // Flatten the tree to the right by pre-order traversal, effectively creating a singly-linked list
 void flatten(TreeNode* root){
     if (root){
@@ -385,6 +412,99 @@ std::vector<int> postorderTraversal(TreeNode* root){
     result.push_back(root->val);
 
     return result;
+}
+
+std::vector<std::vector<int> > levelOrder(TreeNode* root){
+    std::vector<std::vector<int> > result;
+
+    std::vector<TreeNode*> lastNodes;
+    if (root){
+        TreeNode *dummy = new TreeNode(0, root, nullptr);
+        lastNodes.push_back(dummy);
+    
+        for (int depth=0; depth<maxDepth(root); depth++){
+            std::vector<int> row;
+            std::vector<TreeNode*> currNodes;
+
+            for (TreeNode *curr : lastNodes){
+                if (curr -> left){
+                    row.push_back(curr -> left -> val);
+                    currNodes.push_back(curr -> left);
+                }
+                if (curr -> right){
+                    row.push_back(curr -> right -> val);
+                    currNodes.push_back(curr -> right);
+                }
+            }
+
+            lastNodes.clear();
+            lastNodes = currNodes;
+            result.push_back(row);
+        }
+
+        delete dummy;
+    }
+
+    return result;
+}
+
+// maxVal() and minVal() are for use by isValidBST()
+int maxVal(TreeNode* root){
+    if (!root) return INT_MIN;
+
+    int lVal = INT_MIN;
+    int rVal = INT_MIN;
+    if (root -> left) lVal = maxVal(root->left);
+    if (root -> right) rVal = maxVal(root->right);
+
+    return std::max(root->val, std::max(lVal, rVal));
+}
+
+int minVal(TreeNode* root){
+    if (!root) return INT_MAX;
+
+    int lVal = INT_MAX;
+    int rVal = INT_MAX;
+    if (root -> left) lVal = minVal(root->left);
+    if (root -> right) rVal = minVal(root->right);
+
+    return std::min(root->val, std::min(lVal, rVal));
+}
+
+// Determine whether / not a tree is a valid binary search tree
+bool isValidBST(TreeNode* root){
+    if (!root) return true;
+
+    if (root -> left){
+        if (maxVal(root->left) >= root->val) return false;
+        if (!isValidBST(root->left)) return false;
+    }
+    if (root -> right){
+        if (minVal(root->right) <= root->val) return false;
+        if (!isValidBST(root->right)) return false;
+    }
+
+    return true;
+}
+
+// Return all structurally unique BSTs with exactly n nodes of unique values from 1 to n
+std::vector<TreeNode*> generateTrees(int n){
+    std::vector<TreeNode*> trees;
+
+    // All the options for the root
+    for (int i=0; i<n; i++){
+        TreeNode *root = new TreeNode(i);
+
+        // All the options for which node we are going to explore the options for, i.e. next node, one after that, etc.
+        for (int j=0; j<n; j++){
+            // All the options for what value the jth node along will take
+            for (int k=0; k<n; k++){
+
+            }
+        }
+    }
+
+    return trees;
 }
 
 // Get a tree from the user
@@ -534,10 +654,28 @@ void balancedFunc(){
     std::cout << (isBalanced(roots[getTreeNum()]) ? "Balanced.\n" : "Unbalanced.\n");
 }
 
-void pathFunc(){
+void hasPathFunc(){
     int t = getTreeNum();
     int targetSum = getInt("What is the target sum? ");
     std::cout << (hasPathSum(roots[t], targetSum) ? "Path found.\n" : "Path not found.\n");
+}
+
+void pathsFunc(){
+    int t = getTreeNum();
+    int targetSum = getInt("What is the target sum? ");
+    std::vector<std::vector<int> > paths = pathSum(roots[t], targetSum);
+    if (paths.size() == 0){
+        std::cout << "No paths found.\n";
+    } else{
+        std::cout << "Paths found:\n";
+        for (std::vector<int> path : paths){
+            for (int i=0; i<path.size(); i++){
+                std::cout << path[i];
+                if (i < path.size()-1) std::cout << " -> ";
+            }
+            std::cout << "\n";
+        }
+    }
 }
 
 void flattenFunc(){
@@ -573,6 +711,28 @@ void postorderFunc(){
     }
 }
 
+void levelorderFunc(){
+    int t = getTreeNum();
+    if (!roots[t]){
+        std::cout << "Tree empty.\n";
+    } else{
+        std::vector<std::vector<int> > traversal = levelOrder(roots[t]);
+        std::cout << "Pre-order traversal: ";
+        for (std::vector<int> trav : traversal){
+            std::cout << "[";
+            for (int t : trav)
+                std::cout << t << " ";
+            std::cout << "] ";
+        }
+        std::cout << "\n";
+    }
+}
+
+void bstFunc(){
+    int t = getTreeNum();
+    std::cout << "Tree #" << t+1 << (isValidBST(roots[t]) ? " is " : " is not ") << "a valid binary search tree.\n";
+}
+
 int main(int argc, char *argv[]){
     std::cout << "trees.cpp!\n";
     std::cout << "Type \"commands\" for a full list of commands.\n\n";
@@ -589,10 +749,13 @@ int main(int argc, char *argv[]){
     commands.emplace("same", &sameFunc);
     commands.emplace("symmetrical", &symFunc);
     commands.emplace("balances", &balancedFunc);
-    commands.emplace("path", &pathFunc);
+    commands.emplace("path", &hasPathFunc);
+    commands.emplace("paths", &pathsFunc);
     commands.emplace("flatten", &flattenFunc);
     commands.emplace("preorder", &preorderFunc);
     commands.emplace("postorder", &postorderFunc);
+    commands.emplace("levelorder", &levelorderFunc);
+    commands.emplace("bst", &bstFunc);
 
     std::string input;
     do {
