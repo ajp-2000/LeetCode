@@ -688,6 +688,44 @@ ListNode *reverseBetween(ListNode *head, int left, int right){
     return head;
 }
 
+// Reorder list (L0 -> L1 -> ... -> Ln-1 -> Ln) to (L0 -> Ln -> L1 -> Ln-1 -> L2 -> ...)
+ListNode *reorderList(ListNode *head){
+    // Use two pointers at each end of the list, converging, to find the nodes we need; reorder them with a new head
+    ListNode *fwdScanner = head;
+    ListNode *bckwdScanner = head;
+    while (bckwdScanner -> next) bckwdScanner = bckwdScanner -> next;
+
+    ListNode *dummyHead = fwdScanner;
+    ListNode *dummy = new ListNode(0);
+    ListNode *dummyDummy = dummy;
+
+    while (fwdScanner && bckwdScanner){
+        // Assign the nodes
+        dummy -> next = fwdScanner;
+        dummy = dummy -> next;
+        if (fwdScanner == bckwdScanner) break;
+        ListNode *fwdTemp = fwdScanner;
+
+        // Decrement the backward pointer
+        ListNode *s = fwdScanner;
+        while (s->next != bckwdScanner)
+            s = s -> next;
+        ListNode *newBckwdScanner = s;
+
+        fwdScanner = fwdScanner -> next;
+        dummy -> next = bckwdScanner;
+        dummy = dummy -> next;
+        if (fwdScanner == bckwdScanner) break;
+        bckwdScanner = newBckwdScanner;
+    }
+
+    dummy -> next = nullptr;
+    delete dummyDummy;
+    head = dummyHead;
+
+    return head;
+}
+
 /* The interface. All of the commands the user might call are given their own function so we can map them */
 ListNode *heads[10];
 
@@ -954,6 +992,17 @@ void reverseBetweenFunc(){
     printList(heads[l]);
 }
 
+void reorderFunc(){
+    int l = getListNum();
+    if (!heads[l]){
+        std::cout << "List empty.\n";
+    } else{
+        heads[l] = reorderList(heads[l]);
+        std::cout << "Reordered list #" << l+1 << ": ";
+        printList(heads[l]);
+    }
+}
+
 int main(int argc, char *argv[]){
     std::cout << "Welcome to the LeetCode Linked List Manipulator. Enter a command like 'set', 'print', or 'sort'.\n";
     std::cout << "Try \"commands\" for a list of commands.\n\n";
@@ -982,6 +1031,7 @@ int main(int argc, char *argv[]){
     commands.emplace("reversek", &reverseKFunc);
     commands.emplace("partition", &partitionFunc);
     commands.emplace("reversebet", &reverseBetweenFunc);
+    commands.emplace("reorder", &reorderFunc);
 
     // Let the user do things
     std::string input;
