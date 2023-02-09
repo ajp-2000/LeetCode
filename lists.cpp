@@ -726,6 +726,35 @@ ListNode *reorderList(ListNode *head){
     return head;
 }
 
+// Rearrange a list with all the odd-indiced nodes (first, third, etc.) followed by all the even
+ListNode *oddEven(ListNode *head){
+    if (!head || !head->next) return head;
+        
+    ListNode *odds = new ListNode(0);
+    ListNode *evens = new ListNode(0);
+    ListNode *oddScanner = odds;
+    ListNode *evenScanner = evens;
+
+    ListNode *parts[] = {oddScanner, evenScanner};
+    int parity = 0;
+    while (head){
+        parts[parity] -> next = head;
+        parts[parity] = parts[parity] -> next;
+        head = head -> next;
+        parity = (parity == 0);
+    }
+    parts[parity] -> next = nullptr;
+
+    ListNode *newHead = odds -> next;
+    ListNode *newScanner = newHead;
+    while (newScanner -> next) newScanner = newScanner -> next;
+    newScanner -> next = evens -> next;
+    delete odds;
+    delete evens;
+
+    return newHead;
+}
+
 /* The interface. All of the commands the user might call are given their own function so we can map them */
 ListNode *heads[10];
 
@@ -1003,6 +1032,17 @@ void reorderFunc(){
     }
 }
 
+void oddevenFunc(){
+    int l = getListNum();
+    if (!heads[l]){
+        std::cout << "List empty.\n";
+    } else{
+        heads[l] = oddEven(heads[l]);
+        std::cout << "Rearranged list #" << l+1 << ": ";
+        printList(heads[l]);
+    }
+}
+
 int main(int argc, char *argv[]){
     std::cout << "Welcome to the LeetCode Linked List Manipulator. Enter a command like 'set', 'print', or 'sort'.\n";
     std::cout << "Try \"commands\" for a list of commands.\n\n";
@@ -1032,6 +1072,7 @@ int main(int argc, char *argv[]){
     commands.emplace("partition", &partitionFunc);
     commands.emplace("reversebet", &reverseBetweenFunc);
     commands.emplace("reorder", &reorderFunc);
+    commands.emplace("oddeven", &oddevenFunc);
 
     // Let the user do things
     std::string input;
