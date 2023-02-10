@@ -807,12 +807,11 @@ void setFunc(){
     std::cout << "List updated.\n";
 }
 
-void printFunc(){
-    printList(heads[getListNum()]);
+void printFunc(int l){
+    printList(heads[l]);
 }
 
-void lenFunc(){
-    int l = getListNum();
+void lenFunc(int l){
     int len = listLen(heads[l]);
 
     if (len == -1){
@@ -822,42 +821,34 @@ void lenFunc(){
     }
 }
 
-void sortFunc(){
-    int l = getListNum();
+void sortFunc(int l){
     heads[l] = sortList(heads[l]);
     std::cout << "List sorted. Updated list: ";
     printList(heads[l]);
 }
 
-void cycleFunc(){
-    int l = getListNum();
+void cycleFunc(int l){
     int p = hasCycle(heads[l]);
 
-    if (!heads[l]){
-        std::cout << "No cycle (list empty).\n";
-    } else if (p){
+    if (p){
         std::cout << "List #" << l+1 << " has a cycle, from node " << std::max(0, p) << " to node " << cycleStart(heads[l]) << ".\n";
     } else{
         std::cout << "List does not have a cycle.\n";
     }
 }
 
-void loopFunc(){
-    int l = getListNum();
+void loopFunc(int l){
     loopList(heads[l]);
     std::cout << "List looped. New list: ";
     printList(heads[l]);
 }
 
-void catFunc(){
-    int l = getListNum();
+void catFunc(int l){
     int m = getListNum("Which other # list? (1 - 10) ");
 
     // Avert disaster
-    if (!heads[l]){
-        std::cout << "List #" << l+1 << " is empty.\n";
-    } else if (!heads[m]){
-        std::cout << "List #" << m+1 << " is empty.\n";
+    if (!heads[m]){
+        std::cout << "List empty.\n";
     } else if (hasCycle(heads[l])){
         std::cout << "Cannot concatenate to a list with a cycle.\n";
     } else{
@@ -885,8 +876,7 @@ void catFunc(){
     }
 }
 
-void nthFunc(){
-    int l = getListNum();
+void nthFunc(int l){
     int n = getInt("How many places from end? ");
     removeNthFromEnd(heads[l], n);
 
@@ -894,8 +884,7 @@ void nthFunc(){
     printList(heads[l]);
 }
 
-void swapFunc(){
-    int l = getListNum();
+void swapFunc(int l){
     if (hasCycle(heads[l])){
         std::cout << "Can't swap pairs in a list with a cycle.\n";
     } else{
@@ -905,10 +894,8 @@ void swapFunc(){
     }
 }
 
-void copyFunc(){
-    int l = getListNum("Copy which # list? (1 - 10) ");
-    int m = getListNum("Copy to which other # list? (1 - 10) ");
-
+void copyFunc(int l){
+    int m = getListNum("Copy to which  # list? (1 - 10) ");
     if (heads[m]){
         deleteList(heads[m]);
         std::cout << "Clearing list #" << m+1 << "...\n";
@@ -919,20 +906,16 @@ void copyFunc(){
     printList(heads[m]);
 }
 
-void sortedFunc(){
-    int l = getListNum();
+void sortedFunc(int l){
 
-    if (!heads[l]){
-        std::cout << "List empty.\n";
-    } else if (isSorted(heads[l])){
+    if (isSorted(heads[l])){
         std::cout << "List sorted.\n";
     } else{
         std::cout << "List unsorted.\n";
     }
 }
 
-void mergeFunc(){
-    int l = getListNum();
+void mergeFunc(int l){
     int m = getListNum("Which other # list? (1 - 10) ");
     ListNode *p = heads[l];
     ListNode *q = copyList(heads[m]);
@@ -973,8 +956,7 @@ void mergeKFunc(){
     printList(heads[listNums[0]]);
 }
 
-void rotateFunc(){
-    int l = getListNum();
+void rotateFunc(int l){
     int k = getInt("Rotate by how many places? ");
 
     if (k < 0){
@@ -988,21 +970,15 @@ void rotateFunc(){
     }
 }
 
-void deleteDuplicatesFunc(){
-    int l = getListNum();
+void deleteDuplicatesFunc(int l){
     if (!isSorted(heads[l])) heads[l] = sortList(heads[l]);
 
-    if (!heads[l]){
-        std::cout << "List empty.\n";
-    } else{
-        heads[l] = deleteDuplicates(heads[l]);
-        std::cout << "Duplicates removed. List #" << l+1 << " is now: ";
-        printList(heads[l]);
-    }
+    heads[l] = deleteDuplicates(heads[l]);
+    std::cout << "Duplicates removed. List #" << l+1 << " is now: ";
+    printList(heads[l]);
 }
 
-void reverseKFunc(){
-    int l = getListNum();
+void reverseKFunc(int l){
     int k = getInt("Enter k: ");
     if (k < 1){
         std::cout << "k must be at least 1.\n";
@@ -1017,8 +993,7 @@ void reverseKFunc(){
     printList(heads[l]);
 }
 
-void partitionFunc(){
-    int l = getListNum();
+void partitionFunc(int l){
     int x = getInt("Enter the partition boundary: ");
 
     heads[l] = partitionList(heads[l], x);
@@ -1026,13 +1001,7 @@ void partitionFunc(){
     printList(heads[l]);
 }
 
-void reverseBetweenFunc(){
-    int l = getListNum();
-    if (!heads[l]){
-        std::cout << "List empty.\n";
-        return;
-    }
-
+void reverseBetweenFunc(int l){
     int a = getInt("Reverse nodes starting at position (not zero-indexed): ");
     if (a < 1){
         std::cout << "Cannot start at a negative index.\n";
@@ -1056,35 +1025,20 @@ void reverseBetweenFunc(){
     printList(heads[l]);
 }
 
-void reorderFunc(){
-    int l = getListNum();
-    if (!heads[l]){
-        std::cout << "List empty.\n";
-    } else{
-        heads[l] = reorderList(heads[l]);
-        std::cout << "Reordered list #" << l+1 << ": ";
-        printList(heads[l]);
-    }
+void reorderFunc(int l){
+    heads[l] = reorderList(heads[l]);
+    std::cout << "Reordered list #" << l+1 << ": ";
+    printList(heads[l]);
 }
 
-void oddevenFunc(){
-    int l = getListNum();
-    if (!heads[l]){
-        std::cout << "List empty.\n";
-    } else{
-        heads[l] = oddEven(heads[l]);
-        std::cout << "Rearranged list #" << l+1 << ": ";
-        printList(heads[l]);
-    }
+void oddevenFunc(int l){
+    heads[l] = oddEven(heads[l]);
+    std::cout << "Rearranged list #" << l+1 << ": ";
+    printList(heads[l]);
 }
 
-void palindromeFunc(){
-    int l = getListNum();
-    if (!heads[l]){
-        std::cout << "List empty.\n";
-    } else{
-        std::cout << "List #" << l+1 << (isPalindrome(heads[l]) ? " is " : " is not ") << "a palindrome.\n";
-    }
+void palindromeFunc(int l){
+    std::cout << "List #" << l+1 << (isPalindrome(heads[l]) ? " is " : " is not ") << "a palindrome.\n";
 }
 
 int main(int argc, char *argv[]){
@@ -1096,8 +1050,8 @@ int main(int argc, char *argv[]){
         heads[l] = nullptr;
 
     // Create a map of commands to functions
-    std::unordered_map<std::string, void (*)()> commands;
-    commands.emplace("set", &setFunc);
+    std::unordered_map<std::string, void (*)(int)> commands;
+    //commands.emplace("set", &setFunc);
     commands.emplace("print", &printFunc);
     commands.emplace("len", &lenFunc);
     commands.emplace("sort", &sortFunc);
@@ -1109,7 +1063,7 @@ int main(int argc, char *argv[]){
     commands.emplace("copy", &copyFunc);
     commands.emplace("sorted", &sortedFunc);
     commands.emplace("merge", &mergeFunc);
-    commands.emplace("mergek", &mergeKFunc);
+    //commands.emplace("mergek", &mergeKFunc);
     commands.emplace("rotate", &rotateFunc);
     commands.emplace("duplicates", &deleteDuplicatesFunc);
     commands.emplace("reversek", &reverseKFunc);
@@ -1125,16 +1079,27 @@ int main(int argc, char *argv[]){
         std::cout << "> ";
         std::cin >> input;
 
+        // Asking for the first list and checking for emptiness can be abstracted out to this point
+        // Although set and mergek have to ask for the list # differently
         if (commands.find(input) != commands.end()){
-            commands.at(input)();
+            int l = getListNum();
+            if (!heads[l]){
+                std::cout << "List empty.\n";
+            } else{
+                (commands.at(input))(l);
+            }
+        } else if (input == "set"){
+            setFunc();
+        } else if (input == "mergek"){
+            mergeKFunc();
         } else if (input == "commands"){
             // List all commands in the map
             std::cout << "Available commands:\n\n";
-            for (std::unordered_map<std::string, void (*)()>::iterator it = commands.begin();
+            for (std::unordered_map<std::string, void (*)(int)>::iterator it = commands.begin();
             it != commands.end();
             ++it)
                 std::cout << it->first << "\n";
-        } else if (input != "exit"){
+        }  else if (input != "exit"){
             std::cout << "Command not recognised.\n";
         }
     } while (input != "exit");
