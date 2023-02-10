@@ -755,6 +755,41 @@ ListNode *oddEven(ListNode *head){
     return newHead;
 }
 
+// Check whether a linked list is palindromic
+bool isPalindrome(ListNode *head){
+    // Find the middle of the list
+    ListNode *fast = head;
+    ListNode *slow = head;
+    while (fast && fast->next){
+        fast = fast -> next -> next;
+        slow = slow -> next;
+    }
+
+    // Now reverse the second half of the list
+    ListNode *prev = slow;
+    slow = slow -> next;
+    prev -> next = nullptr;
+
+    while (slow){
+        ListNode *temp = slow -> next;
+        slow -> next = prev;
+        prev = slow;
+        slow = temp;
+    }
+
+    // Check the two halves for identity
+    fast = head;
+    slow = prev;
+
+    while (slow){
+        if (slow->val != fast->val) return false;
+        fast = fast -> next;
+        slow = slow -> next;
+    }
+
+    return true;
+}
+
 /* The interface. All of the commands the user might call are given their own function so we can map them */
 ListNode *heads[10];
 
@@ -1043,6 +1078,15 @@ void oddevenFunc(){
     }
 }
 
+void palindromeFunc(){
+    int l = getListNum();
+    if (!heads[l]){
+        std::cout << "List empty.\n";
+    } else{
+        std::cout << "List #" << l+1 << (isPalindrome(heads[l]) ? " is " : " is not ") << "a palindrome.\n";
+    }
+}
+
 int main(int argc, char *argv[]){
     std::cout << "Welcome to the LeetCode Linked List Manipulator. Enter a command like 'set', 'print', or 'sort'.\n";
     std::cout << "Try \"commands\" for a list of commands.\n\n";
@@ -1073,6 +1117,7 @@ int main(int argc, char *argv[]){
     commands.emplace("reversebet", &reverseBetweenFunc);
     commands.emplace("reorder", &reorderFunc);
     commands.emplace("oddeven", &oddevenFunc);
+    commands.emplace("palindrome", &palindromeFunc);
 
     // Let the user do things
     std::string input;
