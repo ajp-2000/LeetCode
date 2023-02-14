@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 #include <iterator>
+#include <random>
 #include <string>
 #include <sstream>
 #include <unordered_map>
@@ -790,6 +791,20 @@ bool isPalindrome(ListNode *head){
     return true;
 }
 
+// Return the value of a random node in the list
+int randomNode(ListNode *head){
+    int nodes = 0;
+    ListNode *scanner;
+    for (scanner=head; scanner; scanner=scanner->next) nodes++;
+
+    scanner = head;
+    int node = rand() % nodes;
+    for (int n=0; n<node; n++)
+        scanner = scanner -> next;
+
+    return scanner -> val;
+}
+
 /* The interface. All of the commands the user might call are given their own function so we can map them */
 ListNode *heads[10];
 
@@ -1041,6 +1056,10 @@ void palindromeFunc(int l){
     std::cout << "List #" << l+1 << (isPalindrome(heads[l]) ? " is " : " is not ") << "a palindrome.\n";
 }
 
+void randFunc(int l){
+    std::cout << "Random node val from list #" << l+1 << ": " << randomNode(heads[l]) << ".\n";
+}
+
 int main(int argc, char *argv[]){
     std::cout << "Welcome to the LeetCode Linked List Manipulator. Enter a command like 'set', 'print', or 'sort'.\n";
     std::cout << "Try \"commands\" for a list of commands.\n\n";
@@ -1072,6 +1091,7 @@ int main(int argc, char *argv[]){
     commands.emplace("reorder", &reorderFunc);
     commands.emplace("oddeven", &oddevenFunc);
     commands.emplace("palindrome", &palindromeFunc);
+    commands.emplace("random", &randFunc);
 
     // Let the user do things
     std::string input;
