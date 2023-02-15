@@ -194,55 +194,35 @@ int listLen(ListNode *head){
     return len;
 }
 
-// Sort a list in ascending order
+// Insertion sort a list in ascending order
 ListNode *sortList(ListNode *head){
-    ListNode *result = nullptr;
-    ListNode *rScanner = nullptr;
-
-    ListNode *scanner = nullptr;
-    int min;
-    int pos;                                                            // Zero-indexed
-
-    // Look for the lowest value >= min and slip it out of the given list and into the returned list each time
+    ListNode *sorted = new ListNode(INT_MIN);
+    ListNode *dummy = new ListNode(0, head);
+    ListNode *prev = dummy;
+    
     while (head){
-        min = INT_MAX;
+        // Find where in the new list the current node should be inserted
+        ListNode *sortedScanner = sorted;
+        while (sortedScanner->next && head->val>sortedScanner->next->val)
+            sortedScanner = sortedScanner -> next;
+        
+        // Patch up the gap to be left by moving out the current node
+        ListNode *temp = head -> next;
+        prev -> next = temp;
 
-        // First find the node with the (shared) lowest value
-        scanner = head;
-        int p = 0;
+        // Insert it
+        ListNode *temp2 = sortedScanner -> next;
+        head -> next = temp2;
+        sortedScanner -> next = head;
 
-        do{
-            if (scanner->val <= min){
-                min = scanner -> val;
-                pos = p;
-            }
-
-            scanner = scanner -> next;
-            p++;
-        } while (scanner);
-
-        // Then remove that node (the first node with its value) from the given list, by scanning to the previous node
-        if (head->val == min){
-            head = head -> next;
-        } else{
-            scanner = head;
-            while (scanner->next->val != min) scanner = scanner -> next;
-            ListNode *temp = (scanner->next) -> next;
-            delete scanner -> next;
-            scanner -> next = temp;
-        }
-
-        // And add an equal node to the new list
-        if (!result){
-            result = new ListNode(min);
-            rScanner = result;
-        } else{
-            rScanner -> next = new ListNode(min);
-            rScanner = rScanner -> next;
-        }
+        head = prev -> next;
     }
 
-    return result;
+    ListNode *sortedHead = sorted -> next;
+    delete sorted;
+    delete dummy;
+
+    return sortedHead;
 }
 
 // Check if a list is sorted in an ascending order
@@ -805,6 +785,32 @@ int randomNode(ListNode *head){
     return scanner -> val;
 }
 
+// Helper function for addTwoNumbers() – assumes at least one node
+int listToInt(ListNode *head){
+    int num = head -> val;
+    for (ListNode *scanner=head->next; scanner; scanner=scanner->next){
+        num *= 10;
+        num += scanner -> val;
+    }
+
+    return num;
+}
+
+// Take two lists representing integers, each node a digit starting with the heads,
+// and return their sum as another linked list
+ListNode *addTwoNumbers(ListNode *l1, ListNode *l2){
+    int sum = listToInt(l1) + listToInt(l2);
+    
+    ListNode *tail = nullptr;
+    while (sum > 0){
+        tail = new ListNode(sum % 10, tail);
+        sum /= 10;
+    }
+    if (!tail) tail = new ListNode(0);
+
+    return tail;
+}
+
 /* The interface. All of the commands the user might call are given their own function so we can map them */
 ListNode *heads[10];
 
@@ -1060,6 +1066,19 @@ void randFunc(int l){
     std::cout << "Random node val from list #" << l+1 << ": " << randomNode(heads[l]) << ".\n";
 }
 
+void addTwoFunc(int l){
+    int m = getListNum("Which other # list? (1 - 10) ");
+    int n = getListNum("Store the result where? ");
+
+    if (!heads[m]){
+        std::cout << "List #"  << m+1 << " is empty.\n";
+    } else{
+        heads[n] = addTwoNumbers(heads[l], heads[m]);
+        std::cout << "List #" << n+1 << " is now: ";
+        printList(heads[n]);
+    }
+}
+
 int main(int argc, char *argv[]){
     std::cout << "Welcome to the LeetCode Linked List Manipulator. Enter a command like 'set', 'print', or 'sort'.\n";
     std::cout << "Try \"commands\" for a list of commands.\n\n";
@@ -1092,6 +1111,7 @@ int main(int argc, char *argv[]){
     commands.emplace("oddeven", &oddevenFunc);
     commands.emplace("palindrome", &palindromeFunc);
     commands.emplace("random", &randFunc);
+    commands.emplace("add", &addTwoFunc);
 
     // Let the user do things
     std::string input;
