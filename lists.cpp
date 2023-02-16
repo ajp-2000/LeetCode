@@ -6,6 +6,7 @@
 #include <random>
 #include <string>
 #include <sstream>
+#include <stack>
 #include <unordered_map>
 #include <vector>
 
@@ -561,6 +562,20 @@ ListNode *deleteDuplicates(ListNode *head){
     return head;
 }
 
+// Reverse a list (in-place)
+ListNode *reverseList(ListNode *head){
+    ListNode *next, *prev = nullptr;
+
+    while (head){
+        next = head -> next;
+        head -> next = prev;
+        prev = head;
+        head = next;
+    }
+
+    return prev;
+}
+
 // Reverse a list in groups of k nodes
 ListNode *reverseKGroup(ListNode *head, int k){
     ListNode *dummy = new ListNode(0, head);
@@ -785,30 +800,62 @@ int randomNode(ListNode *head){
     return scanner -> val;
 }
 
-// Helper function for addTwoNumbers() – assumes at least one node
-int listToInt(ListNode *head){
-    int num = head -> val;
-    for (ListNode *scanner=head->next; scanner; scanner=scanner->next){
-        num *= 10;
-        num += scanner -> val;
+// Take two lists representing integers, each node a digit starting with the heads,
+// and return their sum as another linked list – here we take a significant-first approach that doesn't 
+// involve reversing l1 and l2 first
+ListNode *addTwoNumbers(ListNode *l1, ListNode *l2){
+    ListNode *num1 = reverseList(l1);
+    ListNode *num2 = reverseList(l2);
+
+    // So we can work from the least significant digit up
+    ListNode *result = nullptr;
+    ListNode *dummy = new ListNode(0, result);
+    ListNode *dummyScanner = dummy;
+    int carry = 0;
+
+    while (num1 || num2){
+        int digit = (num1 ? num1 -> val : 0) + (num2 ? num2 -> val : 0) + carry;
+        carry = digit / 10;
+        digit %= 10;
+
+        dummyScanner -> next = new ListNode(digit);
+        dummyScanner = dummyScanner -> next;
+
+        if (num1) num1 = num1 -> next;
+        if (num2) num2 = num2 -> next;
     }
 
-    return num;
+    if (carry)
+        dummyScanner -> next = new ListNode(carry);
+    
+    result = dummy -> next;
+    delete dummy;
+    result = reverseList(result);
+
+    return result;
 }
 
-// Take two lists representing integers, each node a digit starting with the heads,
-// and return their sum as another linked list
-ListNode *addTwoNumbers(ListNode *l1, ListNode *l2){
-    int sum = listToInt(l1) + listToInt(l2);
-    
-    ListNode *tail = nullptr;
-    while (sum > 0){
-        tail = new ListNode(sum % 10, tail);
-        sum /= 10;
-    }
-    if (!tail) tail = new ListNode(0);
+// For each node in the list, find the value of the next greater node
+std::vector<int> nextLargerNodes(ListNode* head){
+    std::vector<int> results(listLen(head), 0);
+    std::stack<std::pair<int, int> > st;
+    int i = 0;
 
-    return tail;
+    while (head){
+        // Use a stack to save each node until the first subsequent node comes up which is larger than it
+        while (!st.empty() && (st.top().first < head->val)){
+            results[st.top().second] = head -> val;
+            st.pop();
+        }
+
+        st.push({head -> val, i});
+        head = head -> next;
+        i++;
+    }
+
+    return results;
+
+    return results;
 }
 
 /* The interface. All of the commands the user might call are given their own function so we can map them */
@@ -999,6 +1046,12 @@ void deleteDuplicatesFunc(int l){
     printList(heads[l]);
 }
 
+void reverseFunc(int l){
+    heads[l] = reverseList(heads[l]);
+    std::cout << "Reversal complete. List is now: ";
+    printList(heads[l]);
+}
+
 void reverseKFunc(int l){
     int k = getInt("Enter k: ");
     if (k < 1){
@@ -1079,6 +1132,16 @@ void addTwoFunc(int l){
     }
 }
 
+void nextLargerFunc(int l){
+    std::vector<int> nexts = nextLargerNodes(heads[l]);
+    std::cout << "Values of next larger nodes: ";
+
+    for (int n=0; n<nexts.size()-1; n++){
+        std::cout << nexts[n] << ", ";
+    }
+    std::cout << nexts.back() << "\n";
+}
+
 int main(int argc, char *argv[]){
     std::cout << "Welcome to the LeetCode Linked List Manipulator. Enter a command like 'set', 'print', or 'sort'.\n";
     std::cout << "Try \"commands\" for a list of commands.\n\n";
@@ -1089,7 +1152,6 @@ int main(int argc, char *argv[]){
 
     // Create a map of commands to functions
     std::unordered_map<std::string, void (*)(int)> commands;
-    //commands.emplace("set", &setFunc);
     commands.emplace("print", &printFunc);
     commands.emplace("len", &lenFunc);
     commands.emplace("sort", &sortFunc);
@@ -1101,9 +1163,9 @@ int main(int argc, char *argv[]){
     commands.emplace("copy", &copyFunc);
     commands.emplace("sorted", &sortedFunc);
     commands.emplace("merge", &mergeFunc);
-    //commands.emplace("mergek", &mergeKFunc);
     commands.emplace("rotate", &rotateFunc);
     commands.emplace("duplicates", &deleteDuplicatesFunc);
+    commands.emplace("reverse", &reverseFunc);
     commands.emplace("reversek", &reverseKFunc);
     commands.emplace("partition", &partitionFunc);
     commands.emplace("reversebet", &reverseBetweenFunc);
@@ -1112,6 +1174,7 @@ int main(int argc, char *argv[]){
     commands.emplace("palindrome", &palindromeFunc);
     commands.emplace("random", &randFunc);
     commands.emplace("add", &addTwoFunc);
+    commands.emplace("nextlarger", &nextLargerFunc);
 
     // Let the user do things
     std::string input;
